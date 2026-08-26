@@ -1,0 +1,76 @@
+{
+  "count": 900695,
+  "next": "https://api.rawg.io/api/games?key=***&page=2&page_size=3&ordering=-metacritic",
+  "previous": null,
+  "results": [
+    {
+      "id": 25097,
+      "slug": "the-legend-of-zelda-ocarina-of-time",
+      "name": "The Legend of Zelda: Ocarina of Time",
+      "released": "1998-11-21",
+      "background_image": "https://media.rawg.io/media/games/3a0/3a0c8e9ed3a711c542218831b893a0fa.jpg",
+      "rating": 4.37,
+      "rating_top": 5,
+      "metacritic": 99,
+      "playtime": 7,
+      "genres": [
+        {
+          "id": 4,
+          "name": "Action",
+          "slug": "action"
+        },
+        {
+          "id": 3,
+          "name": "Adventure",
+          "slug": "adventure"
+        },
+        {
+          "id": 5,
+          "name": "RPG",
+          "slug": "role-playing-games-rpg"
+        }
+      ]
+    },
+    {
+      "id": 407559,
+      "slug": "soulcalibur-1998",
+      "name": "Soulcalibur (1998)",
+      "released": "1998-07-30",
+      "background_image": null,
+      "rating": 0.0,
+      "rating_top": 0,
+      "metacritic": 98,
+      "playtime": 0,
+      "genres": [
+        {
+          "id": 6,
+          "name": "Fighting",
+          "slug": "fighting"
+        }
+      ]
+    },
+    {
+      "id": 54751,
+      "slug": "soulcalibur",
+      "name": "Soulcalibur",
+      "released": "1998-07-30",
+      "background_image": "https://media.rawg.io/media/games/743/7430f1846ba6ce836f169d936c89819e.jpg",
+      "rating": 4.39,
+      "rating_top": 5,
+      "metacritic": 98,
+      "playtime": 6,
+      "genres": [
+        {
+          "id": 4,
+          "name": "Action",
+          "slug": "action"
+        },
+        {
+          "id": 6,
+          "name": "Fighting",
+          "slug": "fighting"
+        }
+      ]
+    }
+  ]
+}

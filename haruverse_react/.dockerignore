@@ -1,0 +1,17 @@
+# 컨테이너 안에서 npm ci 로 새로 설치한다.
+# ★이걸 빼면 안 된다★ 호스트(Windows)에서 설치된 네이티브 모듈이
+# 리눅스 컨테이너로 들어가 빌드가 깨진다.
+node_modules/
+
+# 빌드 산출물
+dist/
+
+# 테스트 결과물
+test-results/
+playwright-report/
+e2e/
+
+# IDE·OS
+.idea/
+.vscode/
+.DS_Store

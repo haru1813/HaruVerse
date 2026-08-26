@@ -1,0 +1,57 @@
+plugins {
+    id 'java'
+    // Spring Boot — 실행 가능한 부트 앱으로 만들고, 스타터 의존성 버전을 자동 관리
+    id 'org.springframework.boot' version '3.4.1'
+    // 위 Boot BOM으로 의존성 버전을 관리해주는 플러그인 (버전 생략 가능해짐)
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.haru'
+version = '1.0-SNAPSHOT'
+
+// Java 21 (설치된 JDK와 일치)
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 웹 — REST API·MVC (내장 톰캣 포함)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // JPA — ORM(엔티티↔테이블 매핑, Hibernate)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // MyBatis — SQL 매퍼 (복잡 쿼리·통계용). Boot BOM이 버전 관리 안 하므로 버전 명시
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
+
+    // Spring Security — 인증·인가 (로그인/회원가입 API 보호)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // JWT (jjwt) — 토큰 생성·서명·검증
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // MariaDB — 개발·운영 공용 DB.
+    //   컨테이너로 띄운 인스턴스 하나를 로컬 백엔드와 컨테이너 백엔드가 함께 쓴다.
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+
+    // H2 — 테스트 전용(인메모리). 테스트는 외부 DB 없이도 돌아가야 한다.
+    //   src/test/resources/application.yml 에서만 쓰인다.
+    runtimeOnly 'com.h2database:h2'
+
+    // 테스트 — spring-boot-starter-test(JUnit5·Mockito·AssertJ 포함) + 시큐리티 테스트 유틸
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}

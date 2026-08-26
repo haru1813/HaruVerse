@@ -1,0 +1,48 @@
+# ── 빌드 산출물 ────────────────────────────────────
+build/
+out/
+bin/
+dist/
+target/
+
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar   # ★래퍼 jar는 커밋한다★ 없으면 clone 후 ./gradlew 가 안 돈다
+
+# ── 의존성 ─────────────────────────────────────────
+node_modules/
+
+# ── 비밀정보 ───────────────────────────────────────
+# 소스에는 키를 두지 않는다 (RAWG 키는 환경변수 RAWG_API_KEY 로 주입)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# ── 로컬 데이터 ────────────────────────────────────
+# MariaDB 로 옮기기 전 쓰던 H2 파일. 실행하면 다시 생긴다.
+docker-data/
+*.mv.db
+*.trace.db
+*.bak
+
+# ── 테스트 산출물 ──────────────────────────────────
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+coverage/
+
+# ── 에디터·OS ──────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ── 로그 ───────────────────────────────────────────
+*.log
+logs/

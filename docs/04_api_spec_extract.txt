@@ -1,0 +1,58 @@
+HaruVerse — API 명세 
+ HaruVerse · 설계 문서 ④ API 명세 
+ REST API 명세 
+ 프론트 ↔ 백엔드 계약 · JSON · JWT 
+ 박하루 · 2026-06-28 · base /api · Springdoc(Swagger) 자동생성 
+ 📁 HaruVerse 설계 문서: 
+ 00 아키텍처 01 기획 02 백엔드 03 프론트 04 API 05 화면 06 ERD 
+ 1 공통 규약 
+ Base URL : /api (nginx가 백엔드로 프록시) 
+ 형식 : 요청·응답 모두 JSON (UTF-8) 
+ 인증 : Authorization: Bearer {JWT} (인증 필요 API) 
+ 메서드 규약 : GET 조회 · POST 생성 · PUT 수정 · DELETE 삭제 
+ 페이징 : ?page=0&size=20&sort=releaseDate,desc (Spring Pageable) 
+ 공통 응답 포맷 (ApiResponse) 
+ {
+ "success" : true ,
+ "data" : { ... }, // 성공 시 데이터 
+ "error" : null // 실패 시 { code, message } 
+} 
+ 2 auth · member (인증·회원) 
+ 메서드 경로 설명 인증 
+ POST /api/members 회원가입 - 
+ POST /api/auth/login 로그인 → JWT 발급 - 
+ POST /api/auth/reissue 토큰 재발급 (선택) - 
+ GET /api/members/me 내 정보 조회 🔒 
+ 예: 로그인 
+ // 요청 POST /api/auth/login
+{ "loginId" : "haru" , "password" : "****" }
+ // 응답 
+{ "success" :true, "data" :{ "accessToken" : "eyJ..." , "nickname" : "haru" } } 
+ 3 work (작품) 
+ 메서드 경로 설명 인증 
+ GET /api/works 작품 목록 (필터: ?type=ANIME&season=2026-spring&genre=action&page= ) - 
+ GET /api/works/{id} 작품 상세 (캐릭터·장르·제작사 포함) - 
+ GET /api/works/seasons 분기 목록 (선택) - 
+ 4 search (검색 · Elasticsearch) 
+ 메서드 경로 설명 인증 
+ GET /api/search?q={키워드} 통합 검색 (제목·캐릭터·태그) - 
+ GET /api/search/autocomplete?q={접두} 자동완성 추천어 - 
+ 검색은 MariaDB가 아닌 Elasticsearch 를 조회 (WorkDocument). 
+ 5 favorite (즐겨찾기) 
+ 메서드 경로 설명 인증 
+ GET /api/favorites 내 즐겨찾기 목록 🔒 
+ POST /api/favorites 즐겨찾기 추가 (body: workId ) 🔒 
+ DELETE /api/favorites/{workId} 즐겨찾기 삭제 🔒 
+ 6 에러 · 인증 흐름 
+ 에러 응답 
+ { "success" :false, "data" :null,
+ "error" :{ "code" : "WORK_NOT_FOUND" , "message" : "작품을 찾을 수 없습니다" } } 
+ HTTP 상황 
+ 400 잘못된 요청 (검증 실패) 
+ 401 인증 필요 / 토큰 만료 
+ 403 권한 없음 
+ 404 리소스 없음 
+ 500 서버 오류 
+ ★ Springdoc(Swagger UI) 자동 생성 
+ 컨트롤러에 어노테이션을 달면 /swagger-ui.html 에서 API 문서가 자동 생성 된다. 이 명세서는 *설계 단계의 계약*이고, 구현 후엔 Swagger UI가 *살아있는 문서* 역할. (하루님 롯데온 Swagger 경험과 동일!)
+ HaruVerse 설계문서 ④ API 명세 · 박하루 · 2026-06-28 · /api · JWT · Springdoc

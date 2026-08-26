@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HaruVerse — 화면 설계서</title>
+<style>
+  :root{
+    --navy:#1b2a4a; --blue:#2563eb; --blue-soft:#eaf1ff; --pink:#db2777; --pink-soft:#fce7f3;
+    --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f6f8fc;
+    --wf:#e2e8f0; --wfb:#cbd5e1; --wf2:#eef2f7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Pretendard","Malgun Gothic","맑은 고딕",system-ui,sans-serif; line-height:1.7; font-size:15px;}
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px 60px;}
+  .cover{background:linear-gradient(135deg,#9d174d,#2563eb); color:#fff;
+    border-radius:0 0 24px 24px; padding:44px 40px 34px; margin-bottom:22px; box-shadow:0 10px 30px rgba(157,23,77,.2);}
+  .cover .kicker{display:inline-block; background:rgba(255,255,255,.16); padding:5px 14px; border-radius:999px; font-size:13px; margin-bottom:14px;}
+  .cover h1{font-size:29px; margin:0 0 6px; font-weight:800; letter-spacing:-.5px;}
+  .cover .sub{font-size:16px; opacity:.95;}
+  .cover .meta{font-size:13px; opacity:.85; border-top:1px solid rgba(255,255,255,.25); padding-top:13px; margin-top:16px;}
+  .nav{background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 20px; margin-bottom:20px; font-size:14px;}
+  .nav b{color:var(--navy);} .nav a{color:var(--blue); text-decoration:none; margin-right:10px;}
+  section{background:#fff; border:1px solid var(--line); border-radius:16px; padding:26px 30px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,.03);}
+  h2{font-size:21px; margin:0 0 6px; color:var(--navy); font-weight:800; display:flex; align-items:center; gap:10px;}
+  h2 .num{background:var(--pink); color:#fff; width:29px; height:29px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex:0 0 auto;}
+  h3{font-size:14px; color:#475569; margin:14px 0 6px; font-weight:700;}
+  p{margin:0 0 10px;} strong{color:var(--navy);}
+  .note{font-size:12.5px; color:var(--muted); margin-top:8px;}
+  .note code{background:#eef2ff; color:#3730a3; padding:1px 5px; border-radius:4px; font-size:11.5px;}
+  /* === wireframe kit === */
+  .wf{border:2px dashed var(--wfb); border-radius:10px; padding:14px; background:#fafbfc; margin:8px 0;}
+  .wf-h{background:var(--wf); border-radius:7px; padding:9px 13px; display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12.5px; color:#475569; margin-bottom:10px;}
+  .wf-logo{font-weight:800; color:var(--pink); white-space:nowrap;}
+  .wf-nav{display:flex; gap:12px; font-size:12px; color:#64748b;}
+  .wf-search{flex:1; background:#fff; border:1px solid var(--wfb); border-radius:20px; padding:6px 14px; color:#94a3b8; max-width:300px; position:relative;}
+  .wf-sec{font-weight:700; color:#475569; font-size:12.5px; margin:12px 0 6px; display:flex; justify-content:space-between; align-items:center;}
+  .wf-sec .more{font-weight:400; color:#94a3b8; font-size:11.5px;}
+  .wf-cards{display:grid; grid-template-columns:repeat(5,1fr); gap:8px;}
+  .wf-cards.c4{grid-template-columns:repeat(4,1fr);}
+  .wf-card{background:var(--wf); border-radius:7px; height:120px; position:relative; display:flex; flex-direction:column; overflow:hidden;}
+  .wf-card .thumb{flex:1; background:var(--wfb);}
+  .wf-card .ttl{font-size:10.5px; color:#64748b; padding:5px 6px; line-height:1.3;}
+  .wf-badge{position:absolute; top:5px; left:5px; background:var(--pink); color:#fff; font-size:9px; padding:1px 6px; border-radius:8px; font-weight:700;}
+  .wf-rate{position:absolute; top:5px; right:5px; background:rgba(0,0,0,.6); color:#fde047; font-size:9px; padding:1px 6px; border-radius:8px;}
+  .wf-hero{background:linear-gradient(120deg,#cbd5e1,#94a3b8); border-radius:9px; height:140px; display:flex; flex-direction:column; justify-content:flex-end; padding:16px; color:#fff;}
+  .wf-hero .ht{font-size:18px; font-weight:800;} .wf-hero .hs{font-size:11px; opacity:.9;}
+  .wf-tabs{display:flex; gap:6px; margin:10px 0;}
+  .wf-tab{background:var(--wf2); border:1px solid var(--wfb); border-radius:16px; padding:4px 13px; font-size:11.5px; color:#64748b;}
+  .wf-tab.on{background:var(--pink); color:#fff; border-color:var(--pink);}
+  .wf-drop{position:relative; background:#fff; border:1px solid var(--wfb); border-radius:10px; margin-top:4px; box-shadow:0 6px 16px rgba(0,0,0,.08);}
+  .wf-drop-item{padding:8px 14px; font-size:12px; color:#475569; border-bottom:1px solid #f1f5f9; display:flex; gap:8px; align-items:center;}
+  .wf-drop-item .mini{width:24px; height:32px; background:var(--wfb); border-radius:3px;}
+  .wf-filters{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0;}
+  .wf-fl{background:#fff; border:1px solid var(--wfb); border-radius:6px; padding:6px 12px; font-size:11.5px; color:#64748b;}
+  .wf-box{background:var(--wf); border-radius:7px; padding:16px; text-align:center; color:#64748b; font-size:12.5px;}
+  .wf-input{background:#fff; border:1px solid var(--wfb); border-radius:6px; padding:9px 12px; color:#94a3b8; font-size:12.5px; margin:6px 0;}
+  .wf-btn{background:var(--blue); color:#fff; border-radius:6px; padding:9px; text-align:center; font-size:12.5px; font-weight:700; margin:6px 0;}
+  .wf-btn.ghost{background:#fff; border:1px solid var(--blue); color:var(--blue);}
+  .wf-detail{display:flex; gap:14px;}
+  .wf-poster{width:130px; height:180px; background:linear-gradient(135deg,#cbd5e1,#94a3b8); border-radius:7px; flex:0 0 auto;}
+  .wf-meta{flex:1;}
+  .wf-line{height:11px; background:var(--wf); border-radius:4px; margin:7px 0;}
+  .wf-line.short{width:45%;} .wf-line.mid{width:70%;} .wf-line.lg{width:90%;}
+  .wf-chips{display:flex; gap:6px; margin:8px 0; flex-wrap:wrap;} .wf-chip{background:var(--blue-soft); color:var(--blue); border-radius:12px; padding:3px 11px; font-size:11px;}
+  .wf-pager{display:flex; gap:5px; justify-content:center; margin-top:10px;}
+  .wf-pg{width:26px; height:26px; background:#fff; border:1px solid var(--wfb); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#64748b;}
+  .wf-pg.on{background:var(--pink); color:#fff; border-color:var(--pink);}
+  .wf-skel{background:linear-gradient(90deg,#e2e8f0 25%,#eef2f7 50%,#e2e8f0 75%); border-radius:7px; height:120px;}
+  .wf-empty{text-align:center; padding:30px; color:#94a3b8; font-size:13px;}
+  .wf-mobile{width:240px; border:8px solid #334155; border-radius:26px; padding:10px; background:#fafbfc; margin:0 auto;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .stbox{border:1px solid var(--line); border-radius:10px; padding:12px;}
+  .stbox .t{font-size:12px; font-weight:700; color:var(--navy); margin-bottom:6px;}
+  .swatch{display:flex; gap:10px; flex-wrap:wrap; margin:8px 0;}
+  .sw{width:88px;} .sw .chip{height:46px; border-radius:8px; margin-bottom:4px;} .sw .lbl{font-size:11px; color:#64748b;}
+  .box{border-radius:12px; padding:14px 18px; margin:12px 0; font-size:13.5px;}
+  .box.note2{background:#fffbeb; border:1px solid #fde68a;}
+  .box .bt{font-weight:700; margin-bottom:4px; color:var(--navy);}
+  footer{text-align:center; color:var(--muted); font-size:13px; margin-top:24px;}
+  @media (max-width:680px){ .grid2,.grid3{grid-template-columns:1fr;} .wf-cards,.wf-cards.c4{grid-template-columns:repeat(2,1fr);} }
+  @media print{
+    @page{margin:12mm;}
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    body{background:#fff; font-size:12px;}
+    .wrap{padding:0; max-width:100%;}
+    .cover{box-shadow:none; border-radius:0;}
+    section{box-shadow:none; break-inside:avoid; border:1px solid #ddd; margin-bottom:12px;}
+    h2{break-after:avoid;} .wf,.stbox{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="cover">
+    <span class="kicker">HaruVerse · 설계 문서 ⑤ 화면 설계</span>
+    <h1>화면 설계서 (와이어프레임)</h1>
+    <div class="sub">주요 화면 · 상태 화면 · 모바일 · 디자인 가이드</div>
+    <div class="meta">박하루 · 2026-06-28 · 호요버스 감성 다크 테마</div>
+  </div>
+
+  <div class="nav">
+    <b>📁 HaruVerse 설계 문서:</b>
+    <a href="00_architecture.html">00 아키텍처</a> <a href="01_planning.html">01 기획</a> <a href="02_backend_package.html">02 백엔드</a> <a href="03_frontend.html">03 프론트</a> <a href="04_api_spec.html">04 API</a> <a href="05_screen_design.html">05 화면</a> <a href="06_erd.html">06 ERD</a>
+  </div>
+
+  <!-- 0 공통 -->
+  <section>
+    <h2><span class="num">0</span> 공통 레이아웃</h2>
+    <h3>헤더 (모든 화면 고정) · 푸터</h3>
+    <div class="wf">
+      <div class="wf-h">
+        <span class="wf-logo">🌌 HaruVerse</span>
+        <span class="wf-nav">애니 · 게임 · 분기별</span>
+        <span class="wf-search">🔍 작품·캐릭터 검색...</span>
+        <span class="wf-nav">로그인 · 회원가입</span>
+      </div>
+      <div class="wf-box" style="height:50px;display:flex;align-items:center;justify-content:center;">▼ 페이지 콘텐츠 ▼</div>
+      <div class="wf-h" style="margin-top:10px;margin-bottom:0;justify-content:center;font-size:11px;">© HaruVerse · 데이터: MyAnimeList(Jikan) · RAWG · 비영리 개인 프로젝트</div>
+    </div>
+    <p class="note">로그인 후 헤더 우측 → <code>닉네임 ▾</code> 드롭다운(내 즐겨찾기·로그아웃)으로 전환.</p>
+  </section>
+
+  <!-- 1 홈 -->
+  <section>
+    <h2><span class="num">1</span> 홈</h2>
+    <div class="wf">
+      <div class="wf-h"><span class="wf-logo">🌌 HaruVerse</span><span class="wf-search">🔍 검색...</span><span class="wf-nav">로그인</span></div>
+      <div class="wf-hero"><div class="ht">이번 분기 주목작 ⭐</div><div class="hs">2026 봄 신작 · 자동 슬라이드 배너</div></div>
+      <div class="wf-tabs"><span class="wf-tab on">전체</span><span class="wf-tab">애니</span><span class="wf-tab">게임</span><span class="wf-tab">2026 봄 ▾</span></div>
+      <div class="wf-sec"><span>📅 이번 분기 신작</span><span class="more">더보기 →</span></div>
+      <div class="wf-cards">
+        <div class="wf-card"><div class="wf-badge">NEW</div><div class="wf-rate">★4.8</div><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+        <div class="wf-card"><div class="wf-rate">★4.5</div><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+      </div>
+      <div class="wf-sec"><span>🔥 인기 작품</span><span class="more">더보기 →</span></div>
+      <div class="wf-cards">
+        <div class="wf-card"><div class="wf-rate">★4.9</div><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">작품 제목</div></div>
+      </div>
+    </div>
+    <p class="note">컴포넌트: <code>HeroBanner</code>·<code>FilterTabs</code>·<code>WorkCard</code>(배지·평점) / API: <code>GET /api/works?season=&type=</code></p>
+  </section>
+
+  <!-- 2 검색 -->
+  <section>
+    <h2><span class="num">2</span> 검색 — 자동완성 &amp; 결과</h2>
+    <div class="grid2">
+      <div>
+        <h3>① 자동완성 (입력 중)</h3>
+        <div class="wf">
+          <div class="wf-search" style="max-width:100%;">🔍 스파이...</div>
+          <div class="wf-drop">
+            <div class="wf-drop-item"><div class="mini"></div>스파이 패밀리 <span style="color:#94a3b8;font-size:10px;">애니</span></div>
+            <div class="wf-drop-item"><div class="mini"></div>스파이더맨 <span style="color:#94a3b8;font-size:10px;">게임</span></div>
+            <div class="wf-drop-item" style="border:none;"><div class="mini"></div>스파이 X 캐릭터 <span style="color:#94a3b8;font-size:10px;">캐릭터</span></div>
+          </div>
+        </div>
+        <p class="note">실시간 추천 / API: <code>GET /api/search/autocomplete?q=</code></p>
+      </div>
+      <div>
+        <h3>② 검색 결과 + 필터</h3>
+        <div class="wf">
+          <div class="wf-filters"><span class="wf-fl">타입 ▾</span><span class="wf-fl">분기 ▾</span><span class="wf-fl">장르 ▾</span><span class="wf-fl">정렬: 평점 ▾</span></div>
+          <div class="wf-cards c4">
+            <div class="wf-card"><div class="wf-rate">★4.8</div><div class="thumb"></div><div class="ttl">결과1</div></div>
+            <div class="wf-card"><div class="thumb"></div><div class="ttl">결과2</div></div>
+            <div class="wf-card"><div class="thumb"></div><div class="ttl">결과3</div></div>
+            <div class="wf-card"><div class="thumb"></div><div class="ttl">결과4</div></div>
+          </div>
+          <div class="wf-pager"><span class="wf-pg">‹</span><span class="wf-pg on">1</span><span class="wf-pg">2</span><span class="wf-pg">3</span><span class="wf-pg">›</span></div>
+        </div>
+        <p class="note">API: <code>GET /api/search?q=&type=&genre=&sort=&page=</code></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 상세 -->
+  <section>
+    <h2><span class="num">3</span> 작품 상세</h2>
+    <div class="wf">
+      <div class="wf-h"><span class="wf-logo">🌌</span><span class="wf-search">🔍 검색...</span><span class="wf-nav">haru님 ▾</span></div>
+      <div class="wf-detail">
+        <div class="wf-poster"></div>
+        <div class="wf-meta">
+          <div class="wf-line mid"></div>
+          <div class="wf-chips"><span class="wf-chip">애니</span><span class="wf-chip">액션</span><span class="wf-chip">코미디</span><span class="wf-chip">2026 봄</span><span class="wf-chip">★ 4.8</span></div>
+          <div class="wf-line lg"></div><div class="wf-line lg"></div><div class="wf-line mid"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;"><div class="wf-btn" style="width:130px;margin:0;">⭐ 즐겨찾기</div><div class="wf-btn ghost" style="width:110px;margin:0;">🔗 원본 보기</div></div>
+        </div>
+      </div>
+      <div class="wf-sec" style="margin-top:14px;">👥 등장 캐릭터</div>
+      <div class="wf-cards">
+        <div class="wf-card" style="height:96px;"><div class="thumb"></div><div class="ttl">캐릭터</div></div>
+        <div class="wf-card" style="height:96px;"><div class="thumb"></div><div class="ttl">캐릭터</div></div>
+        <div class="wf-card" style="height:96px;"><div class="thumb"></div><div class="ttl">캐릭터</div></div>
+        <div class="wf-card" style="height:96px;"><div class="thumb"></div><div class="ttl">캐릭터</div></div>
+        <div class="wf-card" style="height:96px;"><div class="thumb"></div><div class="ttl">캐릭터</div></div>
+      </div>
+      <div class="wf-sec" style="margin-top:12px;">🎬 제작사 · 🔁 관련 작품(같은 장르)</div>
+      <div class="wf-cards"><div class="wf-card"><div class="thumb"></div><div class="ttl">관련작</div></div><div class="wf-card"><div class="thumb"></div><div class="ttl">관련작</div></div><div class="wf-card"><div class="thumb"></div><div class="ttl">관련작</div></div><div class="wf-card"><div class="thumb"></div><div class="ttl">관련작</div></div><div class="wf-card"><div class="thumb"></div><div class="ttl">관련작</div></div></div>
+    </div>
+    <p class="note">컴포넌트: <code>WorkDetail</code>·<code>FavoriteButton</code>·<code>CharacterList</code>·<code>RelatedWorks</code> / API: <code>GET /api/works/{id}</code></p>
+  </section>
+
+  <!-- 4 로그인/회원가입 -->
+  <section>
+    <h2><span class="num">4</span> 로그인 · 회원가입</h2>
+    <div class="grid2">
+      <div>
+        <h3>로그인</h3>
+        <div class="wf">
+          <div class="wf-box" style="margin-bottom:8px;font-weight:700;color:var(--pink);">🌌 HaruVerse 로그인</div>
+          <div class="wf-input">아이디</div>
+          <div class="wf-input">비밀번호</div>
+          <div class="wf-btn">로그인</div>
+          <div class="note" style="text-align:center;">계정이 없으신가요? <strong>회원가입</strong></div>
+        </div>
+        <p class="note">API: <code>POST /api/auth/login</code> → JWT</p>
+      </div>
+      <div>
+        <h3>회원가입</h3>
+        <div class="wf">
+          <div class="wf-box" style="margin-bottom:8px;font-weight:700;color:var(--pink);">🌌 회원가입</div>
+          <div class="wf-input">아이디 (중복확인)</div>
+          <div class="wf-input">비밀번호</div>
+          <div class="wf-input">비밀번호 확인</div>
+          <div class="wf-input">닉네임</div>
+          <div class="wf-btn">가입하기</div>
+        </div>
+        <p class="note">검증: react-hook-form / API: <code>POST /api/members</code></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 즐겨찾기 -->
+  <section>
+    <h2><span class="num">5</span> 내 즐겨찾기 🔒</h2>
+    <div class="wf">
+      <div class="wf-h"><span class="wf-logo">🌌</span><span class="wf-nav">haru님 ▾ (내 즐겨찾기 · 로그아웃)</span></div>
+      <div class="wf-sec"><span>⭐ 내가 찜한 작품 (12)</span><span class="more">정렬: 최근순 ▾</span></div>
+      <div class="wf-cards">
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">찜한 작품</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">찜한 작품</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">찜한 작품</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">찜한 작품</div></div>
+        <div class="wf-card"><div class="thumb"></div><div class="ttl">찜한 작품</div></div>
+      </div>
+    </div>
+    <p class="note">미인증 시 → <code>/login</code> 리다이렉트 (ProtectedRoute) / API: <code>GET /api/favorites</code></p>
+  </section>
+
+  <!-- 6 상태 화면 -->
+  <section>
+    <h2><span class="num">6</span> 상태 화면 (로딩 · 빈 · 에러)</h2>
+    <div class="grid3">
+      <div>
+        <div class="stbox"><div class="t">⏳ 로딩 (스켈레톤)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div class="wf-skel" style="height:80px;"></div><div class="wf-skel" style="height:80px;"></div><div class="wf-skel" style="height:80px;"></div><div class="wf-skel" style="height:80px;"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="stbox"><div class="t">🗒️ 빈 상태</div>
+          <div class="wf-empty">🔍<br>검색 결과가 없어요<br><span style="font-size:11px;">다른 키워드로 검색해보세요</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="stbox"><div class="t">⚠️ 에러 / 404</div>
+          <div class="wf-empty">🌌<br>페이지를 찾을 수 없어요<br><span style="font-size:11px;">홈으로 돌아가기</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="note">TanStack Query의 <code>isLoading</code>·<code>isError</code> 상태로 분기 렌더. 빈 데이터는 빈 상태 컴포넌트.</p>
+  </section>
+
+  <!-- 7 모바일 -->
+  <section>
+    <h2><span class="num">7</span> 모바일 반응형</h2>
+    <div class="grid2">
+      <div>
+        <h3>모바일 홈</h3>
+        <div class="wf-mobile">
+          <div class="wf-h" style="padding:7px 9px;font-size:10px;"><span class="wf-logo" style="font-size:11px;">🌌</span><span>🔍</span><span>☰</span></div>
+          <div class="wf-hero" style="height:80px;padding:10px;"><div class="ht" style="font-size:12px;">주목작</div></div>
+          <div class="wf-tabs" style="margin:8px 0;"><span class="wf-tab on" style="padding:3px 9px;font-size:10px;">전체</span><span class="wf-tab" style="padding:3px 9px;font-size:10px;">애니</span><span class="wf-tab" style="padding:3px 9px;font-size:10px;">게임</span></div>
+          <div class="wf-cards" style="grid-template-columns:1fr 1fr;gap:6px;"><div class="wf-card" style="height:100px;"><div class="thumb"></div><div class="ttl">작품</div></div><div class="wf-card" style="height:100px;"><div class="thumb"></div><div class="ttl">작품</div></div></div>
+        </div>
+      </div>
+      <div>
+        <h3>모바일 상세</h3>
+        <div class="wf-mobile">
+          <div class="wf-h" style="padding:7px 9px;font-size:10px;"><span>‹ 뒤로</span><span class="wf-logo" style="font-size:11px;">🌌</span><span>⭐</span></div>
+          <div class="wf-poster" style="width:100%;height:120px;"></div>
+          <div class="wf-line mid" style="margin-top:8px;"></div>
+          <div class="wf-chips" style="margin:6px 0;"><span class="wf-chip" style="font-size:9px;">애니</span><span class="wf-chip" style="font-size:9px;">★4.8</span></div>
+          <div class="wf-line lg"></div><div class="wf-line lg"></div><div class="wf-line short"></div>
+          <div class="wf-btn" style="font-size:11px;">⭐ 즐겨찾기</div>
+        </div>
+      </div>
+    </div>
+    <p class="note">브레이크포인트: 모바일 1열 → 태블릿 2~3열 → 데스크탑 5열. 헤더는 모바일에서 햄버거(☰) 메뉴.</p>
+  </section>
+
+  <!-- 8 디자인 가이드 -->
+  <section>
+    <h2><span class="num">8</span> 디자인 가이드 (호요버스 감성 🌌)</h2>
+    <p>우주·네온 무드의 <strong>다크 테마</strong>. 와이어프레임은 회색이지만 실제 구현은 아래 토큰으로.</p>
+    <h3>색상 토큰</h3>
+    <div class="swatch">
+      <div class="sw"><div class="chip" style="background:#0a0e1a;"></div><div class="lbl">배경 #0a0e1a</div></div>
+      <div class="sw"><div class="chip" style="background:#141a2e;"></div><div class="lbl">패널 #141a2e</div></div>
+      <div class="sw"><div class="chip" style="background:#22d3ee;"></div><div class="lbl">시안 #22d3ee</div></div>
+      <div class="sw"><div class="chip" style="background:#a855f7;"></div><div class="lbl">퍼플 #a855f7</div></div>
+      <div class="sw"><div class="chip" style="background:#f472b6;"></div><div class="lbl">핑크 #f472b6</div></div>
+      <div class="sw"><div class="chip" style="background:#e2e8f0;"></div><div class="lbl">텍스트 #e2e8f0</div></div>
+    </div>
+    <h3>타이포 · 간격</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr style="background:#f1f5fb;"><td style="border:1px solid var(--line);padding:7px;font-weight:700;">제목</td><td style="border:1px solid var(--line);padding:7px;">Pretendard Bold 24~32px</td></tr>
+      <tr><td style="border:1px solid var(--line);padding:7px;font-weight:700;">본문</td><td style="border:1px solid var(--line);padding:7px;">15px · line-height 1.6</td></tr>
+      <tr style="background:#f8fafc;"><td style="border:1px solid var(--line);padding:7px;font-weight:700;">액센트</td><td style="border:1px solid var(--line);padding:7px;">시안·퍼플 그라데이션 (배지·버튼·호버 글로우)</td></tr>
+      <tr><td style="border:1px solid var(--line);padding:7px;font-weight:700;">카드</td><td style="border:1px solid var(--line);padding:7px;">radius 12px · 호버 시 네온 테두리 글로우</td></tr>
+    </table>
+    <div class="box note2"><div class="bt">🌌 무드</div>호요버스(붕괴·원신) 감성 — 어두운 우주 배경 + 네온 액센트 + 카드 호버 글로우. "HaruVerse = 하루의 우주" 컨셉.</div>
+  </section>
+
+  <footer>HaruVerse 설계문서 ⑤ 화면 설계 · 박하루 · 2026-06-28 · 와이어프레임 + 상태 + 모바일 + 디자인 가이드</footer>
+
+</div>
+</body>
+</html>

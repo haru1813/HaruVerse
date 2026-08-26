@@ -1,0 +1,98 @@
+{
+  "pagination": {
+    "last_visible_page": 15365,
+    "has_next_page": true,
+    "current_page": 1,
+    "items": {
+      "count": 2,
+      "total": 30729,
+      "per_page": 2
+    }
+  },
+  "data": [
+    {
+      "mal_id": 52991,
+      "title": "Sousou no Frieren",
+      "title_english": "Frieren: Beyond Journey's End",
+      "type": "TV",
+      "score": 9.26,
+      "season": "fall",
+      "year": 2023,
+      "synopsis": "During their decade-long quest to defeat the Demon King, the members of the hero's party—Himmel himself, the priest Heit",
+      "images": {
+        "jpg": {
+          "image_url": "https://cdn.myanimelist.net/images/anime/1015/138006.jpg",
+          "large_image_url": "https://cdn.myanimelist.net/images/anime/1015/138006l.jpg"
+        }
+      },
+      "aired": {
+        "from": "2023-09-29T00:00:00+00:00",
+        "to": "2024-03-22T00:00:00+00:00"
+      },
+      "studios": [
+        {
+          "mal_id": 11,
+          "name": "Madhouse"
+        }
+      ],
+      "genres": [
+        {
+          "mal_id": 2,
+          "name": "Adventure"
+        },
+        {
+          "mal_id": 46,
+          "name": "Award Winning"
+        },
+        {
+          "mal_id": 8,
+          "name": "Drama"
+        },
+        {
+          "mal_id": 10,
+          "name": "Fantasy"
+        }
+      ]
+    },
+    {
+      "mal_id": 61316,
+      "title": "Re:Zero kara Hajimeru Isekai Seikatsu 4th Season",
+      "title_english": "Re:ZERO -Starting Life in Another World- Season 4",
+      "type": "TV",
+      "score": 9.18,
+      "season": "spring",
+      "year": 2026,
+      "synopsis": "In the deadly battle at the Watergate City of Priestella, Subaru and his allies barely emerged victorious—but their triu",
+      "images": {
+        "jpg": {
+          "image_url": "https://cdn.myanimelist.net/images/anime/1540/155824.jpg",
+          "large_image_url": "https://cdn.myanimelist.net/images/anime/1540/155824l.jpg"
+        }
+      },
+      "aired": {
+        "from": "2026-04-08T00:00:00+00:00",
+        "to": null
+      },
+      "studios": [
+        {
+          "mal_id": 314,
+          "name": "White Fox"
+        }
+      ],
+      "genres": [
+        {
+          "mal_id": 8,
+          "name": "Drama"
+        },
+        {
+          "mal_id": 10,
+          "name": "Fantasy"
+        },
+        {
+          "mal_id": 41,
+          "name": "Suspense"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HaruVerse — 백엔드 패키지 설계</title>
+<style>
+  :root{
+    --navy:#1b2a4a; --blue:#2563eb; --blue-soft:#eaf1ff; --purple:#7c3aed; --purple-soft:#f3eeff;
+    --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f6f8fc; --code:#0f172a; --green:#16a34a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Pretendard","Malgun Gothic","맑은 고딕",system-ui,sans-serif; line-height:1.7; font-size:15px;}
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px 60px;}
+  .cover{background:linear-gradient(135deg,#1e3a2f,#2563eb); color:#fff;
+    border-radius:0 0 24px 24px; padding:44px 40px 34px; margin-bottom:22px; box-shadow:0 10px 30px rgba(30,58,47,.2);}
+  .cover .kicker{display:inline-block; background:rgba(255,255,255,.16); padding:5px 14px; border-radius:999px; font-size:13px; margin-bottom:14px;}
+  .cover h1{font-size:29px; margin:0 0 6px; font-weight:800; letter-spacing:-.5px;}
+  .cover .sub{font-size:16px; opacity:.95;}
+  .cover .meta{font-size:13px; opacity:.85; border-top:1px solid rgba(255,255,255,.25); padding-top:13px; margin-top:16px;}
+  .nav{background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 20px; margin-bottom:20px; font-size:14px;}
+  .nav b{color:var(--navy);} .nav a{color:var(--blue); text-decoration:none; margin-right:12px;}
+  section{background:#fff; border:1px solid var(--line); border-radius:16px; padding:26px 30px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,.03);}
+  h2{font-size:21px; margin:0 0 14px; color:var(--navy); font-weight:800; display:flex; align-items:center; gap:10px;}
+  h2 .num{background:var(--green); color:#fff; width:29px; height:29px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex:0 0 auto;}
+  h3{font-size:16px; color:var(--navy); margin:18px 0 8px;}
+  p{margin:0 0 11px;} ul{margin:0 0 11px; padding-left:20px;} li{margin:5px 0;}
+  strong{color:var(--navy);}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:13.5px;}
+  th,td{border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align:top;}
+  th{background:#f1f5fb; color:var(--navy); font-weight:700;}
+  code{background:#eef2ff; color:#3730a3; padding:1px 6px; border-radius:5px; font-size:13px; font-family:"Cascadia Code",Consolas,monospace;}
+  .tree{background:var(--code); color:#e2e8f0; border-radius:12px; padding:18px 22px; font-family:"Cascadia Code",Consolas,monospace; font-size:13px; line-height:1.55; overflow-x:auto; white-space:pre;}
+  .tree .c{color:#7dd3fc;} .tree .p{color:#fbbf24;} .tree .cm{color:#64748b;}
+  .box{border-radius:12px; padding:15px 19px; margin:12px 0; font-size:14px;}
+  .box.note{background:#fffbeb; border:1px solid #fde68a;}
+  .box.key{background:var(--purple-soft); border:1px solid #ddd0ff;}
+  .box .bt{font-weight:700; margin-bottom:5px; color:var(--navy);}
+  .mermaid{ text-align:center; background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px; margin:14px 0; overflow-x:auto; }
+  footer{text-align:center; color:var(--muted); font-size:13px; margin-top:24px;}
+  @media print{
+    @page{margin:12mm;}
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    body{background:#fff; font-size:12px;}
+    .wrap{padding:0; max-width:100%;}
+    .cover{box-shadow:none; border-radius:0;}
+    section{box-shadow:none; break-inside:avoid; border:1px solid #ddd; margin-bottom:12px;}
+    h2{break-after:avoid;} table,tr,.box,.tree,.mermaid{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="cover">
+    <span class="kicker">HaruVerse · 설계 문서 ② 백엔드 패키지</span>
+    <h1>백엔드 패키지 도메인 설계</h1>
+    <div class="sub">도메인형 구조 (Package by Feature) · Spring Boot</div>
+    <div class="meta">박하루 · 2026-06-28 · base package <code>com.haruverse</code></div>
+  </div>
+
+  <div class="nav">
+    <b>📁 HaruVerse 설계 문서:</b>
+    <a href="00_architecture.html">00 아키텍처</a> <a href="01_planning.html">01 기획</a> <a href="02_backend_package.html">02 백엔드</a> <a href="03_frontend.html">03 프론트</a> <a href="04_api_spec.html">04 API</a> <a href="05_screen_design.html">05 화면</a> <a href="06_erd.html">06 ERD</a>
+  </div>
+
+  <!-- 1 -->
+  <section>
+    <h2><span class="num">1</span> 설계 원칙 — 도메인형 패키지</h2>
+    <p>계층형(<code>controller/</code>, <code>service/</code>, <code>repository/</code>로 먼저 나눔) 대신 <strong>도메인형(Package by Feature)</strong>을 채택한다. 기능(도메인) 단위로 먼저 묶고, 그 안에서 계층을 나눈다.</p>
+    <table>
+      <thead><tr><th>구분</th><th>계층형</th><th>도메인형 (채택)</th></tr></thead>
+      <tbody>
+        <tr><td>1차 분류</td><td>기술 계층 (controller/service/...)</td><td><strong>도메인 (work/member/...)</strong></td></tr>
+        <tr><td>응집도</td><td>낮음 (한 기능이 여러 폴더에 흩어짐)</td><td><strong>높음 (한 도메인이 한 폴더)</strong></td></tr>
+        <tr><td>확장</td><td>폴더마다 추가</td><td><strong>패키지 복제로 도메인 추가</strong> (게임 등)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <h2><span class="num">2</span> 전체 패키지 구조</h2>
+    <div class="tree"><span class="p">com.haruverse</span>
+├─ HaruVerseApplication.java
+│
+├─ <span class="p">global</span>                       <span class="cm"># 공통·횡단 관심사</span>
+│  ├─ config/                  <span class="cm"># SecurityConfig·ElasticConfig·JpaConfig·SwaggerConfig·WebConfig(CORS)</span>
+│  ├─ security/                <span class="cm"># JwtTokenProvider·JwtAuthenticationFilter</span>
+│  ├─ exception/               <span class="cm"># GlobalExceptionHandler·CustomException·ErrorCode</span>
+│  ├─ response/                <span class="cm"># ApiResponse·PageResponse (공통 응답 포맷)</span>
+│  └─ common/                  <span class="cm"># BaseTimeEntity(createdAt·updatedAt)</span>
+│
+├─ <span class="p">work</span>                         <span class="cm"># 작품 (핵심 도메인)</span>
+│  ├─ controller/ <span class="c">WorkController</span>
+│  ├─ service/    <span class="c">WorkService</span>
+│  ├─ repository/ <span class="c">WorkRepository</span>
+│  ├─ domain/     <span class="c">Work</span>, enum <span class="c">WorkType</span>(ANIME·GAME)
+│  └─ dto/        <span class="c">WorkResponse</span>, <span class="c">WorkDetailResponse</span>
+│
+├─ <span class="p">character</span>  <span class="cm"># 캐릭터 (Character·CharacterRepository)</span>
+├─ <span class="p">genre</span>      <span class="cm"># 장르 (Genre·GenreRepository)</span>
+├─ <span class="p">studio</span>     <span class="cm"># 제작사 (Studio·StudioRepository)</span>
+│
+├─ <span class="p">member</span>                       <span class="cm"># 회원 (가입·정보)</span>
+│  ├─ controller/ <span class="c">MemberController</span>
+│  ├─ service/    <span class="c">MemberService</span>
+│  ├─ repository/ <span class="c">MemberRepository</span>
+│  ├─ domain/     <span class="c">Member</span>, enum <span class="c">Role</span>
+│  └─ dto/        <span class="c">SignupRequest</span>, <span class="c">MemberResponse</span>
+│
+├─ <span class="p">auth</span>                         <span class="cm"># 인증 (로그인·JWT 발급) — member와 분리</span>
+│  ├─ controller/ <span class="c">AuthController</span>
+│  ├─ service/    <span class="c">AuthService</span>
+│  └─ dto/        <span class="c">LoginRequest</span>, <span class="c">TokenResponse</span>
+│
+├─ <span class="p">favorite</span>                     <span class="cm"># 즐겨찾기</span>
+│  ├─ controller/ <span class="c">FavoriteController</span>
+│  ├─ service/    <span class="c">FavoriteService</span>
+│  ├─ repository/ <span class="c">FavoriteRepository</span>
+│  └─ domain/     <span class="c">Favorite</span>
+│
+├─ <span class="p">search</span>                       <span class="cm"># 검색 (Elasticsearch — JPA와 분리)</span>
+│  ├─ controller/ <span class="c">SearchController</span>
+│  ├─ service/    <span class="c">SearchService</span>
+│  ├─ document/   <span class="c">WorkDocument</span> (ES 도큐먼트)
+│  └─ repository/ <span class="c">WorkSearchRepository</span> (ElasticsearchRepository)
+│
+└─ <span class="p">external</span>                     <span class="cm"># 외부 API 수집 (어댑터 + 스케줄러)</span>
+   ├─ jikan/      <span class="c">JikanClient</span>, <span class="c">JikanResponse</span>  <span class="cm"># 애니(MyAnimeList)</span>
+   ├─ rawg/       <span class="c">RawgClient</span>, <span class="c">RawgResponse</span>    <span class="cm"># 게임</span>
+   └─ scheduler/  <span class="c">DataCollectScheduler</span>             <span class="cm"># @Scheduled 배치</span></div>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <h2><span class="num">3</span> 도메인별 책임</h2>
+    <table>
+      <thead><tr><th>도메인</th><th>책임</th></tr></thead>
+      <tbody>
+        <tr><td><strong>work</strong></td><td>작품(애니/게임) 조회·목록·상세. 핵심 도메인</td></tr>
+        <tr><td><strong>character·genre·studio</strong></td><td>작품 부속 정보. 작품과 연관(소형 도메인)</td></tr>
+        <tr><td><strong>member</strong></td><td>회원 가입·정보 관리</td></tr>
+        <tr><td><strong>auth</strong></td><td>로그인·JWT 토큰 발급·갱신 (인증 책임만)</td></tr>
+        <tr><td><strong>favorite</strong></td><td>회원의 작품 즐겨찾기 (member ↔ work 연결)</td></tr>
+        <tr><td><strong>search</strong></td><td>Elasticsearch 통합 검색·자동완성 (JPA와 별도 모델)</td></tr>
+        <tr><td><strong>external</strong></td><td>외부 API(Jikan·RAWG) 수집·적재 (스케줄러)</td></tr>
+        <tr><td><strong>global</strong></td><td>설정·보안·예외·공통응답 (횡단 관심사)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <h2><span class="num">4</span> 핵심 설계 결정</h2>
+    <div class="box key"><div class="bt">① JPA Entity ↔ ES Document 분리</div>
+      <code>work.domain.Work</code>(MariaDB 원본) 와 <code>search.document.WorkDocument</code>(Elasticsearch 검색용)를 <strong>별도 모델</strong>로 둔다. 저장과 검색의 책임·스키마가 다르기 때문. (적재 시 Work → WorkDocument 변환·색인)
+    </div>
+    <div class="box key"><div class="bt">② auth ↔ member 분리 (SRP)</div>
+      <code>member</code>는 *회원 정보*, <code>auth</code>는 *로그인·토큰 발급* 책임만. 인증 로직이 회원 도메인을 오염시키지 않게 분리.
+    </div>
+    <div class="box key"><div class="bt">③ external — 어댑터 패턴으로 격리</div>
+      외부 API를 소스별(<code>jikan</code>·<code>rawg</code>)로 <strong>어댑터 격리</strong>. 마켓/소스 추가 시 어댑터만 추가 (하루님 멀티마켓 API 연동 경험과 동일 패턴). API 정책 변경 영향을 국소화.
+    </div>
+    <div class="box key"><div class="bt">④ global — 횡단 관심사 집중</div>
+      설정·보안필터·예외처리·공통응답을 <code>global</code>에 모아 도메인 패키지는 *비즈니스에만* 집중.
+    </div>
+    <div class="box note"><div class="bt">조정 가능</div>
+      character·genre·studio가 너무 작으면 <code>work</code> 하위로 흡수해도 됨. auth를 member에 합쳐도 동작엔 무방(단 분리가 더 깔끔). 프로젝트 규모 보며 조정.
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section>
+    <h2><span class="num">5</span> 도메인 의존 관계</h2>
+    <pre class="mermaid">
+flowchart TD
+    auth["auth (인증)"] --> member["member"]
+    favorite["favorite"] --> work["work (핵심)"]
+    favorite --> member
+    search["search (ES)"] --> work
+    external["external (수집)"] --> work
+    work --> character["character"]
+    work --> genre["genre"]
+    work --> studio["studio"]
+    global["global (공통·설정·보안)"] -.->|횡단| work
+    </pre>
+    <p class="note">화살표 = 의존 방향. <strong>work</strong>가 중심이고, 외부수집(external)·검색(search)·즐겨찾기(favorite)가 work를 향한다. 순환 의존이 없도록 단방향 유지.</p>
+  </section>
+
+  <!-- 6 -->
+  <section>
+    <h2><span class="num">6</span> MSA 전환 대비 설계 원칙</h2>
+    <p><strong>지금은 모놀리식으로 시작</strong>하되, 도메인 경계를 명확히 해 추후 MSA로 떼어낼 수 있게 설계한다. (<em>"Monolith First"</em> — 처음부터 MSA는 오버엔지니어링)</p>
+    <h3>경계 규칙 (지금부터 지킬 것)</h3>
+    <ul>
+      <li><strong>경계 넘는 연관 = ID 참조</strong> — 다른 도메인을 JPA FK(<code>@ManyToOne</code>) 대신 <code>Long workId</code> 같은 ID로 참조 (서비스 분리 시 조인 불가 대비). 단 도메인 <em>내부</em> 연관(Work↔Character)은 FK 허용</li>
+      <li><strong>도메인 간 통신 = service 인터페이스로만</strong> — 다른 도메인 repository 직접 호출 금지</li>
+      <li><strong>이벤트 기반 결합 완화</strong> — <code>ApplicationEvent</code>로 느슨하게 → 추후 메시지큐(Kafka 등) 교체 용이</li>
+      <li><strong>각 도메인 자기 데이터 소유</strong> — 자기 테이블만 접근 (추후 DB 분리 대비)</li>
+      <li><strong>global 공유 최소화</strong> — 공통 모듈이 비대하면 분리 어려움</li>
+    </ul>
+    <h3>전환 로드맵</h3>
+    <div class="box key">
+      <b>1단계 (현재)</b> 모듈러 모놀리식 — 단일 모듈, 패키지 분리 + 경계 규칙<br>
+      <b>2단계</b> 한 도메인(예: <code>search</code>) 독립 서비스로 분리 — MSA 첫 경험·면접 어필<br>
+      <b>3단계</b> API Gateway · Service Discovery · 메시지큐 · 분산추적 (진짜 MSA)
+    </div>
+    <div class="box note"><div class="bt">⚠️ 주의</div>처음부터 MSA로 만들지 말 것 — 오버엔지니어링·미완성 위험. <strong>모놀리식 완성 후 필요 시 점진 분리.</strong></div>
+  </section>
+
+  <footer>HaruVerse 설계문서 ② 백엔드 패키지 · 박하루 · 2026-06-28 · com.haruverse · 도메인형 모듈러 모놀리식</footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose', flowchart: { useMaxWidth: true } });
+</script>
+</body>
+</html>

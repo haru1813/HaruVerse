@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HaruVerse — ERD (DB 설계)</title>
+<style>
+  :root{
+    --navy:#1b2a4a; --blue:#2563eb; --blue-soft:#eaf1ff; --teal:#0d9488; --teal-soft:#ccfbf1;
+    --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f6f8fc; --code:#0f172a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Pretendard","Malgun Gothic","맑은 고딕",system-ui,sans-serif; line-height:1.7; font-size:15px;}
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px 60px;}
+  .cover{background:linear-gradient(135deg,#115e59,#2563eb); color:#fff;
+    border-radius:0 0 24px 24px; padding:44px 40px 34px; margin-bottom:22px; box-shadow:0 10px 30px rgba(17,94,89,.2);}
+  .cover .kicker{display:inline-block; background:rgba(255,255,255,.16); padding:5px 14px; border-radius:999px; font-size:13px; margin-bottom:14px;}
+  .cover h1{font-size:29px; margin:0 0 6px; font-weight:800; letter-spacing:-.5px;}
+  .cover .sub{font-size:16px; opacity:.95;}
+  .cover .meta{font-size:13px; opacity:.85; border-top:1px solid rgba(255,255,255,.25); padding-top:13px; margin-top:16px;}
+  .nav{background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 20px; margin-bottom:20px; font-size:14px;}
+  .nav b{color:var(--navy);} .nav a{color:var(--blue); text-decoration:none; margin-right:10px;}
+  section{background:#fff; border:1px solid var(--line); border-radius:16px; padding:26px 30px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,.03);}
+  h2{font-size:21px; margin:0 0 14px; color:var(--navy); font-weight:800; display:flex; align-items:center; gap:10px;}
+  h2 .num{background:var(--teal); color:#fff; width:29px; height:29px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex:0 0 auto;}
+  h3{font-size:15px; color:var(--navy); margin:16px 0 6px;}
+  p{margin:0 0 11px;} strong{color:var(--navy);}
+  table{width:100%; border-collapse:collapse; margin:8px 0; font-size:13px;}
+  th,td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:#f1f5fb; color:var(--navy); font-weight:700;}
+  code{background:#eef2ff; color:#3730a3; padding:1px 6px; border-radius:5px; font-size:12.5px; font-family:"Cascadia Code",Consolas,monospace;}
+  .pk{color:#b45309; font-weight:700;} .fk{color:#2563eb; font-weight:700;} .uk{color:#7c3aed; font-weight:700;}
+  .mermaid{ text-align:center; background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px; margin:14px 0; overflow-x:auto; }
+  .box{border-radius:12px; padding:15px 19px; margin:12px 0; font-size:14px;}
+  .box.note{background:#fffbeb; border:1px solid #fde68a;}
+  .box.key{background:var(--teal-soft); border:1px solid #99f6e4;}
+  .box .bt{font-weight:700; margin-bottom:5px; color:var(--navy);}
+  .tname{display:inline-block; background:var(--teal); color:#fff; padding:2px 12px; border-radius:6px; font-weight:700; font-size:14px;}
+  footer{text-align:center; color:var(--muted); font-size:13px; margin-top:24px;}
+  @media print{
+    @page{margin:12mm;}
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    body{background:#fff; font-size:12px;}
+    .wrap{padding:0; max-width:100%;}
+    .cover{box-shadow:none; border-radius:0;}
+    section{box-shadow:none; break-inside:avoid; border:1px solid #ddd; margin-bottom:12px;}
+    h2{break-after:avoid;} table,tr,.box,.mermaid{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="cover">
+    <span class="kicker">HaruVerse · 설계 문서 ⑥ ERD</span>
+    <h1>ERD — 데이터베이스 설계</h1>
+    <div class="sub">MariaDB 11 · 테이블·컬럼·관계·인덱스 + ES 매핑</div>
+    <div class="meta">박하루 · 2026-06-28 · 엔진 InnoDB · UTF8MB4</div>
+  </div>
+
+  <div class="nav">
+    <b>📁 HaruVerse 설계 문서:</b>
+    <a href="00_architecture.html">00 아키텍처</a> <a href="01_planning.html">01 기획</a> <a href="02_backend_package.html">02 백엔드</a> <a href="03_frontend.html">03 프론트</a> <a href="04_api_spec.html">04 API</a> <a href="05_screen_design.html">05 화면</a> <a href="06_erd.html">06 ERD</a>
+  </div>
+
+  <!-- 1 -->
+  <section>
+    <h2><span class="num">1</span> ERD 다이어그램</h2>
+    <pre class="mermaid">
+erDiagram
+    MEMBER   ||--o{ FAVORITE  : "registers"
+    WORK     ||--o{ FAVORITE  : "listed-in"
+    WORK     ||--o{ CHARACTER : "has"
+    WORK     ||--o{ WORK_GENRE : ""
+    GENRE    ||--o{ WORK_GENRE : ""
+    STUDIO   ||--o{ WORK      : "produces"
+    MEMBER { bigint id PK }
+    WORK { bigint id PK }
+    CHARACTER { bigint id PK }
+    GENRE { bigint id PK }
+    WORK_GENRE { bigint work_id FK }
+    STUDIO { bigint id PK }
+    FAVORITE { bigint id PK }
+    </pre>
+    <p class="note">관계 요약: <strong>Work</strong>가 중심. Work–Character(1:N), Work–Genre(N:M via <code>work_genre</code>), Work–Studio(N:1), Member–Work(N:M via <code>favorite</code>).</p>
+  </section>
+
+  <!-- 2 work -->
+  <section>
+    <h2><span class="num">2</span> 핵심 테이블</h2>
+
+    <h3><span class="tname">work</span> 작품 (애니/게임)</h3>
+    <table>
+      <thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">id</td><td>BIGINT</td><td>PK, AUTO_INCREMENT</td><td>작품 ID</td></tr>
+        <tr><td>title</td><td>VARCHAR(255)</td><td>NOT NULL, INDEX</td><td>제목</td></tr>
+        <tr><td>type</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>ANIME / GAME (enum)</td></tr>
+        <tr><td>synopsis</td><td>TEXT</td><td>NULL</td><td>줄거리</td></tr>
+        <tr><td>release_date</td><td>DATE</td><td>NULL, INDEX</td><td>출시·방영일</td></tr>
+        <tr><td>season</td><td>VARCHAR(20)</td><td>NULL, INDEX</td><td>분기 (예: 2026-spring)</td></tr>
+        <tr><td>rating</td><td>DECIMAL(3,1)</td><td>NULL</td><td>평점</td></tr>
+        <tr><td>image_url</td><td>VARCHAR(500)</td><td>NULL</td><td>포스터</td></tr>
+        <tr><td class="fk">studio_id</td><td>BIGINT</td><td>FK → studio.id, NULL</td><td>제작사</td></tr>
+        <tr><td class="uk">external_id</td><td>VARCHAR(50)</td><td>UNIQUE</td><td>외부 API ID (중복수집 방지)</td></tr>
+        <tr><td>source</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>JIKAN / RAWG (출처)</td></tr>
+        <tr><td>created_at / updated_at</td><td>DATETIME</td><td>NOT NULL</td><td>BaseTimeEntity</td></tr>
+      </tbody>
+    </table>
+
+    <h3><span class="tname">character</span> 캐릭터</h3>
+    <table>
+      <thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">id</td><td>BIGINT</td><td>PK</td><td>캐릭터 ID</td></tr>
+        <tr><td>name</td><td>VARCHAR(255)</td><td>NOT NULL, INDEX</td><td>이름</td></tr>
+        <tr><td>image_url</td><td>VARCHAR(500)</td><td>NULL</td><td>이미지</td></tr>
+        <tr><td class="fk">work_id</td><td>BIGINT</td><td>FK → work.id, NOT NULL</td><td>소속 작품</td></tr>
+      </tbody>
+    </table>
+
+    <h3><span class="tname">studio</span> 제작사 · <span class="tname">genre</span> 장르</h3>
+    <table>
+      <thead><tr><th>테이블.컬럼</th><th>타입</th><th>제약</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">studio.id / genre.id</td><td>BIGINT</td><td>PK</td></tr>
+        <tr><td>studio.name / genre.name</td><td>VARCHAR(100)</td><td>NOT NULL, UNIQUE</td></tr>
+      </tbody>
+    </table>
+
+    <h3><span class="tname">work_genre</span> 작품-장르 (N:M 조인)</h3>
+    <table>
+      <thead><tr><th>컬럼</th><th>타입</th><th>제약</th></tr></thead>
+      <tbody>
+        <tr><td class="fk">work_id</td><td>BIGINT</td><td>FK → work.id, PK(복합)</td></tr>
+        <tr><td class="fk">genre_id</td><td>BIGINT</td><td>FK → genre.id, PK(복합)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3 member/favorite -->
+  <section>
+    <h2><span class="num">3</span> 회원 · 즐겨찾기</h2>
+
+    <h3><span class="tname">member</span> 회원</h3>
+    <table>
+      <thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">id</td><td>BIGINT</td><td>PK</td><td>회원 ID</td></tr>
+        <tr><td class="uk">login_id</td><td>VARCHAR(50)</td><td>UNIQUE, NOT NULL</td><td>로그인 아이디</td></tr>
+        <tr><td>password</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>BCrypt 해시</td></tr>
+        <tr><td>nickname</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>닉네임</td></tr>
+        <tr><td>role</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>USER / ADMIN</td></tr>
+        <tr><td>created_at / updated_at</td><td>DATETIME</td><td>NOT NULL</td><td>가입·수정 시각</td></tr>
+      </tbody>
+    </table>
+
+    <h3><span class="tname">favorite</span> 즐겨찾기 (Member ↔ Work)</h3>
+    <table>
+      <thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">id</td><td>BIGINT</td><td>PK</td><td>ID</td></tr>
+        <tr><td class="fk">member_id</td><td>BIGINT</td><td>NOT NULL, INDEX</td><td>회원 (※ MSA 대비 ID 참조)</td></tr>
+        <tr><td class="fk">work_id</td><td>BIGINT</td><td>NOT NULL, INDEX</td><td>작품 (※ ID 참조)</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>NOT NULL</td><td>찜한 시각</td></tr>
+      </tbody>
+    </table>
+    <div class="box note"><div class="bt">UNIQUE 제약</div><code>(member_id, work_id)</code> 복합 UNIQUE → 같은 작품 중복 찜 방지.</div>
+  </section>
+
+  <!-- 4 인덱스 -->
+  <section>
+    <h2><span class="num">4</span> 인덱스 · 설계 노트</h2>
+    <table>
+      <thead><tr><th>테이블</th><th>인덱스</th><th>목적</th></tr></thead>
+      <tbody>
+        <tr><td>work</td><td>title, release_date, season, type</td><td>목록 필터·정렬</td></tr>
+        <tr><td>work</td><td>UNIQUE(external_id)</td><td>외부 API 중복 수집 방지(upsert)</td></tr>
+        <tr><td>favorite</td><td>UNIQUE(member_id, work_id)</td><td>중복 찜 방지</td></tr>
+        <tr><td>member</td><td>UNIQUE(login_id)</td><td>아이디 중복 방지</td></tr>
+      </tbody>
+    </table>
+    <div class="box key"><div class="bt">★ MSA 대비</div><code>favorite</code>은 <code>member</code>·<code>work</code>를 <strong>JPA FK 연관이 아닌 ID(BIGINT) 참조</strong>로 둔다 (DB FK 제약은 선택). 추후 서비스 분리 시 조인 의존을 줄이기 위함. (단 work 내부의 character·work_genre는 FK 사용)</div>
+  </section>
+
+  <!-- 5 ES -->
+  <section>
+    <h2><span class="num">5</span> Elasticsearch 매핑 (검색 전용)</h2>
+    <p>MariaDB의 <code>work</code>를 검색용으로 색인하는 <strong>WorkDocument</strong> (별도 모델).</p>
+    <table>
+      <thead><tr><th>필드</th><th>ES 타입</th><th>분석기</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>keyword</td><td>-</td></tr>
+        <tr><td>title</td><td>text</td><td>nori (한국어 형태소) + edge_ngram(자동완성)</td></tr>
+        <tr><td>characterNames</td><td>text</td><td>nori (캐릭터명 통합 검색)</td></tr>
+        <tr><td>genres</td><td>keyword</td><td>- (필터)</td></tr>
+        <tr><td>type · season</td><td>keyword</td><td>- (필터)</td></tr>
+        <tr><td>rating · releaseDate</td><td>float · date</td><td>- (정렬)</td></tr>
+      </tbody>
+    </table>
+    <div class="box note"><div class="bt">동기화</div>외부 수집(<code>external</code>) 또는 work 변경 시 → WorkDocument 색인. <strong>MariaDB=원본 / ES=검색</strong> 역할 분리.</div>
+  </section>
+
+  <footer>HaruVerse 설계문서 ⑥ ERD · 박하루 · 2026-06-28 · MariaDB 11 · InnoDB · UTF8MB4</footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose', er: { useMaxWidth: true } });
+</script>
+</body>
+</html>

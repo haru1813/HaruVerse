@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HaruVerse — 프론트엔드 설계</title>
+<style>
+  :root{
+    --navy:#1b2a4a; --blue:#2563eb; --blue-soft:#eaf1ff; --cyan:#0891b2; --cyan-soft:#e0f7fa;
+    --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f6f8fc; --code:#0f172a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Pretendard","Malgun Gothic","맑은 고딕",system-ui,sans-serif; line-height:1.7; font-size:15px;}
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px 60px;}
+  .cover{background:linear-gradient(135deg,#0e7490,#2563eb); color:#fff;
+    border-radius:0 0 24px 24px; padding:44px 40px 34px; margin-bottom:22px; box-shadow:0 10px 30px rgba(14,116,144,.2);}
+  .cover .kicker{display:inline-block; background:rgba(255,255,255,.16); padding:5px 14px; border-radius:999px; font-size:13px; margin-bottom:14px;}
+  .cover h1{font-size:29px; margin:0 0 6px; font-weight:800; letter-spacing:-.5px;}
+  .cover .sub{font-size:16px; opacity:.95;}
+  .cover .meta{font-size:13px; opacity:.85; border-top:1px solid rgba(255,255,255,.25); padding-top:13px; margin-top:16px;}
+  .nav{background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 20px; margin-bottom:20px; font-size:14px;}
+  .nav b{color:var(--navy);} .nav a{color:var(--blue); text-decoration:none; margin-right:12px;}
+  section{background:#fff; border:1px solid var(--line); border-radius:16px; padding:26px 30px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,.03);}
+  h2{font-size:21px; margin:0 0 14px; color:var(--navy); font-weight:800; display:flex; align-items:center; gap:10px;}
+  h2 .num{background:var(--cyan); color:#fff; width:29px; height:29px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex:0 0 auto;}
+  h3{font-size:16px; color:var(--navy); margin:18px 0 8px;}
+  p{margin:0 0 11px;} ul{margin:0 0 11px; padding-left:20px;} li{margin:5px 0;}
+  strong{color:var(--navy);}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:13.5px;}
+  th,td{border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align:top;}
+  th{background:#f1f5fb; color:var(--navy); font-weight:700;}
+  code{background:#eef2ff; color:#3730a3; padding:1px 6px; border-radius:5px; font-size:13px; font-family:"Cascadia Code",Consolas,monospace;}
+  .tree,.codeblk{background:var(--code); color:#e2e8f0; border-radius:12px; padding:18px 22px; font-family:"Cascadia Code",Consolas,monospace; font-size:13px; line-height:1.55; overflow-x:auto; white-space:pre;}
+  .tree .p{color:#fbbf24;} .tree .c{color:#7dd3fc;} .tree .cm{color:#64748b;}
+  .codeblk .k{color:#c792ea;} .codeblk .s{color:#c3e88d;} .codeblk .cm{color:#64748b;}
+  .box{border-radius:12px; padding:15px 19px; margin:12px 0; font-size:14px;}
+  .box.note{background:#fffbeb; border:1px solid #fde68a;}
+  .box.key{background:var(--cyan-soft); border:1px solid #b2ebf2;}
+  .box .bt{font-weight:700; margin-bottom:5px; color:var(--navy);}
+  .tag{display:inline-block; background:var(--blue-soft); color:var(--blue); font-size:12px; padding:2px 10px; border-radius:999px; margin:2px 4px 2px 0; font-weight:600;}
+  footer{text-align:center; color:var(--muted); font-size:13px; margin-top:24px;}
+  @media print{
+    @page{margin:12mm;}
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    body{background:#fff; font-size:12px;}
+    .wrap{padding:0; max-width:100%;}
+    .cover{box-shadow:none; border-radius:0;}
+    section{box-shadow:none; break-inside:avoid; border:1px solid #ddd; margin-bottom:12px;}
+    h2{break-after:avoid;} table,tr,.box,.tree,.codeblk{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="cover">
+    <span class="kicker">HaruVerse · 설계 문서 ③ 프론트엔드</span>
+    <h1>프론트엔드 설계 (React)</h1>
+    <div class="sub">React + Vite + TypeScript · SPA · REST API 소비</div>
+    <div class="meta">박하루 · 2026-06-28 · 백엔드와 분리, JWT 인증</div>
+  </div>
+
+  <div class="nav">
+    <b>📁 HaruVerse 설계 문서:</b>
+    <a href="00_architecture.html">00 아키텍처</a> <a href="01_planning.html">01 기획</a> <a href="02_backend_package.html">02 백엔드</a> <a href="03_frontend.html">03 프론트</a> <a href="04_api_spec.html">04 API</a> <a href="05_screen_design.html">05 화면</a> <a href="06_erd.html">06 ERD</a>
+  </div>
+
+  <!-- 1 -->
+  <section>
+    <h2><span class="num">1</span> 기술 스택</h2>
+    <p>
+      <span class="tag">React 18</span><span class="tag">Vite</span><span class="tag">TypeScript</span>
+      <span class="tag">React Router</span><span class="tag">TanStack Query</span><span class="tag">axios</span>
+      <span class="tag">Zustand</span><span class="tag">react-hook-form</span><span class="tag">Tailwind / MUI</span>
+    </p>
+    <table>
+      <thead><tr><th>역할</th><th>선택</th><th>이유</th></tr></thead>
+      <tbody>
+        <tr><td>빌드</td><td><strong>Vite</strong></td><td>빠른 개발 서버·HMR (표준)</td></tr>
+        <tr><td>라우팅</td><td><strong>React Router</strong></td><td>SPA 화면 전환</td></tr>
+        <tr><td>서버 상태</td><td><strong>TanStack Query</strong></td><td>API 데이터 캐싱·로딩/에러 자동 관리 (핵심!)</td></tr>
+        <tr><td>전역 상태</td><td><strong>Zustand</strong></td><td>인증 토큰·로그인 상태 (가벼움)</td></tr>
+        <tr><td>HTTP</td><td><strong>axios</strong></td><td>인터셉터로 JWT 자동 주입</td></tr>
+        <tr><td>폼</td><td>react-hook-form</td><td>로그인·회원가입 검증</td></tr>
+        <tr><td>스타일</td><td>Tailwind 또는 MUI</td><td>빠른 UI</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <h2><span class="num">2</span> 폴더 구조 (Feature 기반)</h2>
+    <p>백엔드 도메인형과 <strong>대칭</strong>되게 기능(feature) 단위로 구성.</p>
+    <div class="tree"><span class="p">src/</span>
+├─ main.tsx                  <span class="cm"># 진입점</span>
+├─ App.tsx                   <span class="cm"># 라우터·전역 Provider</span>
+├─ <span class="p">routes/</span>                  <span class="cm"># 라우트 정의·ProtectedRoute</span>
+├─ <span class="p">api/</span>                     <span class="cm"># axios instance·인터셉터(JWT)</span>
+├─ <span class="p">features/</span>                <span class="cm"># 도메인별 기능</span>
+│  ├─ work/      <span class="cm"># components·hooks(useWorks)·api·types</span>
+│  ├─ search/    <span class="cm"># SearchBar·useSearch·자동완성</span>
+│  ├─ auth/      <span class="cm"># LoginForm·useAuth·authApi</span>
+│  ├─ member/    <span class="cm"># SignupForm</span>
+│  └─ favorite/  <span class="cm"># FavoriteButton·useFavorites</span>
+├─ <span class="p">components/</span>              <span class="cm"># 공통 UI (Button·Card·Modal·Layout)</span>
+├─ <span class="p">hooks/</span>                   <span class="cm"># 공통 hook</span>
+├─ <span class="p">store/</span>                   <span class="cm"># Zustand (authStore)</span>
+├─ <span class="p">types/</span>                   <span class="cm"># 공통 타입</span>
+└─ <span class="p">lib/</span>                     <span class="cm"># 유틸·상수</span></div>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <h2><span class="num">3</span> 상태관리 전략</h2>
+    <table>
+      <thead><tr><th>상태 종류</th><th>도구</th><th>예시</th></tr></thead>
+      <tbody>
+        <tr><td><strong>서버 상태</strong> (API 데이터)</td><td>TanStack Query</td><td>작품 목록·상세·검색결과·즐겨찾기 (캐싱·재요청 자동)</td></tr>
+        <tr><td><strong>전역 클라이언트</strong></td><td>Zustand</td><td>JWT 토큰·로그인 여부·내 정보</td></tr>
+        <tr><td><strong>로컬</strong></td><td>useState</td><td>모달 열림·입력값 등</td></tr>
+      </tbody>
+    </table>
+    <div class="box key"><div class="bt">★ 핵심</div>API 데이터는 <strong>TanStack Query</strong>로 다룬다 → 로딩·에러·캐싱·리페치를 직접 안 짜도 됨. 전역 상태(Zustand)는 *인증 정보만* 최소로.</div>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <h2><span class="num">4</span> 라우팅</h2>
+    <table>
+      <thead><tr><th>경로</th><th>화면</th><th>인증</th></tr></thead>
+      <tbody>
+        <tr><td><code>/</code></td><td>홈 (분기 신작·인기)</td><td>-</td></tr>
+        <tr><td><code>/search</code></td><td>검색 결과 (필터)</td><td>-</td></tr>
+        <tr><td><code>/work/:id</code></td><td>작품 상세</td><td>-</td></tr>
+        <tr><td><code>/login</code></td><td>로그인</td><td>-</td></tr>
+        <tr><td><code>/signup</code></td><td>회원가입</td><td>-</td></tr>
+        <tr><td><code>/favorites</code></td><td>내 즐겨찾기</td><td>🔒 필요</td></tr>
+      </tbody>
+    </table>
+    <p class="note">🔒 인증 필요 경로는 <code>&lt;ProtectedRoute&gt;</code>로 감싸 토큰 없으면 <code>/login</code> 리다이렉트.</p>
+  </section>
+
+  <!-- 5 -->
+  <section>
+    <h2><span class="num">5</span> API 통신 (axios + JWT)</h2>
+    <p><code>api/</code>의 axios instance가 <strong>baseURL <code>/api</code></strong> + 인터셉터로 토큰을 자동 처리한다.</p>
+    <div class="codeblk"><span class="cm">// api/axios.ts</span>
+<span class="k">const</span> api = axios.create({ baseURL: <span class="s">'/api'</span> });
+
+<span class="cm">// 요청 인터셉터 — JWT 자동 주입</span>
+api.interceptors.request.use((config) => {
+  <span class="k">const</span> token = useAuthStore.getState().token;
+  <span class="k">if</span> (token) config.headers.Authorization = <span class="s">`Bearer ${token}`</span>;
+  <span class="k">return</span> config;
+});
+
+<span class="cm">// 응답 인터셉터 — 401 처리</span>
+api.interceptors.response.use(
+  (res) => res,
+  (err) => { <span class="k">if</span> (err.response?.status === 401) logout(); <span class="k">return</span> Promise.reject(err); }
+);</div>
+    <p class="note">nginx가 <code>/api</code> → 백엔드로 프록시하므로 CORS 문제 없음 (같은 출처).</p>
+  </section>
+
+  <!-- 6 -->
+  <section>
+    <h2><span class="num">6</span> 화면 ↔ 컴포넌트 ↔ API</h2>
+    <table>
+      <thead><tr><th>화면</th><th>주요 컴포넌트</th><th>호출 API</th></tr></thead>
+      <tbody>
+        <tr><td>홈</td><td>SeasonWorkList·WorkCard</td><td>GET /api/works?season=</td></tr>
+        <tr><td>검색</td><td>SearchBar(자동완성)·SearchResult</td><td>GET /api/search?q=</td></tr>
+        <tr><td>상세</td><td>WorkDetail·CharacterList·FavoriteButton</td><td>GET /api/works/{id}</td></tr>
+        <tr><td>로그인</td><td>LoginForm</td><td>POST /api/auth/login</td></tr>
+        <tr><td>즐겨찾기</td><td>FavoriteList</td><td>GET /api/favorites</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>HaruVerse 설계문서 ③ 프론트엔드 · 박하루 · 2026-06-28 · React + Vite + TS</footer>
+
+</div>
+</body>
+</html>

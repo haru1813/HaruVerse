@@ -1,0 +1,97 @@
+# ─────────────────────────────────────────────────────────────
+# HaruVerse — 컨테이너 구성
+#
+# 실행:  docker compose up -d --build
+# 접속:  프론트   http://localhost:303
+#        백엔드   http://localhost:304/api/works
+#        MariaDB  localhost:305
+#
+# 로컬 개발(5173 / 8080)과 포트가 겹치지 않아 동시에 띄울 수 있고,
+# ★DB는 하나를 함께 쓴다★ — 로컬에서 쓴 글이 컨테이너에도 그대로 보인다.
+#
+# 로컬 개발만 할 때도 DB는 필요하다:
+#   docker compose up -d mariadb
+# ─────────────────────────────────────────────────────────────
+
+services:
+  mariadb:
+    # 맥미니 운영 버전과 맞춘다 → SQL 방언 차이로 "로컬에선 됐는데"를 원천 차단
+    image: mariadb:11
+    container_name: haruverse-mariadb
+    ports:
+      # 외부 305 → 내부 3306. 로컬 백엔드와 DB 툴이 이 포트로 붙는다.
+      - "305:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: haruverse
+      MARIADB_USER: haruverse
+      # 로컬 개발 전용이라 평문. 운영에서는 환경변수로 주입할 것.
+      MARIADB_PASSWORD: haruverse
+      TZ: Asia/Seoul
+    command:
+      # 한글이 깨지지 않도록 utf8mb4 로 고정 (기본 문자셋이 다르면 저장 시 깨진다)
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      # named volume — compose down 해도 데이터가 남는다.
+      # (bind mount 로 두면 Windows 파일 권한 문제로 MariaDB 가 뜨지 않는 경우가 있다)
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      # ★"컨테이너가 떴다" != "접속할 수 있다"★
+      #   이게 없으면 백엔드가 DB 준비 전에 붙으려다 죽는다.
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./haruverse_springboot
+    container_name: haruverse-backend
+    ports:
+      - "304:8080"
+    environment:
+      # ★컨테이너끼리는 서비스명으로 통신★ — localhost 가 아니다.
+      #   application.yml 의 기본값(localhost:305)을 여기서 덮어쓴다.
+      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/haruverse
+      SPRING_DATASOURCE_USERNAME: haruverse
+      SPRING_DATASOURCE_PASSWORD: haruverse
+
+      # RAWG 키는 이미지에 굽지 않고 실행 시점에 호스트 환경변수로 받는다.
+      # 없으면 빈 값 → 게임 수집 API 만 503, 나머지는 정상 동작.
+      RAWG_API_KEY: ${RAWG_API_KEY:-}
+      # ★빈 값을 넘기면 안 된다★ — Spring 입장에선 "정의된 빈 문자열"이라
+      #   application.yml 의 기본값을 덮어버리고, HS256 키 길이 미달로 기동이 실패한다.
+      #   그래서 여기서도 같은 개발용 기본값을 적어둔다. 운영에서는 호스트에서 지정할 것.
+      JWT_SECRET: ${JWT_SECRET:-haruverse-dev-secret-key-please-change-in-production-1234567890}
+      TZ: Asia/Seoul
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 40s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./haruverse_react
+    container_name: haruverse-frontend
+    ports:
+      - "303:80"
+    depends_on:
+      backend:
+        # 백엔드가 healthcheck 를 통과한 뒤에 뜬다.
+        # service_started 로 두면 첫 요청이 502 로 떨어진다.
+        condition: service_healthy
+    environment:
+      TZ: Asia/Seoul
+    restart: unless-stopped
+
+volumes:
+  mariadb-data:

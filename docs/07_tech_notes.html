@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HaruVerse 기술 노트</title>
+<style>
+  :root{
+    --bg:#0f1117; --card:#171a23; --card2:#1d212c; --line:#2a2f3d;
+    --ink:#e8eaf0; --sub:#9aa3b8; --accent:#6ea8fe; --accent2:#7ee787;
+    --warn:#f0a05a; --danger:#ff7b72; --purple:#c792ea;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;padding:28px 16px;background:var(--bg);color:var(--ink);
+       font-family:"Pretendard","Malgun Gothic","맑은 고딕",system-ui,sans-serif;line-height:1.7;}
+  .wrap{max-width:1000px;margin:0 auto;}
+
+  header{margin-bottom:26px;}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-0.5px;}
+  h1 .dot{color:var(--accent);}
+  .sub{color:var(--sub);font-size:13.5px;}
+  .rule{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent2);
+        border-radius:8px;padding:12px 16px;margin-top:14px;font-size:13px;color:var(--sub);}
+  .rule b{color:var(--accent2);}
+
+  /* 목차 */
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:24px;}
+  .toc h2{font-size:13px;color:var(--sub);margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;}
+  .toc ul{margin:0;padding-left:18px;columns:2;font-size:13.5px;}
+  .toc a{color:var(--accent);text-decoration:none;}
+  .toc a:hover{text-decoration:underline;}
+
+  /* 카드 */
+  .tech{background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:20px 22px;margin-bottom:18px;}
+  .tech-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .tech-head h3{font-size:19px;margin:0;color:#fff;}
+  .badge{font-size:11px;font-weight:700;border-radius:5px;padding:2px 8px;}
+  .b-infra{background:#1e3a5f;color:#7cc4ff;}
+  .b-back{background:#1e4620;color:var(--accent2);}
+  .b-front{background:#3d2a4d;color:var(--purple);}
+  .b-devops{background:#4a3319;color:var(--warn);}
+  .b-db{background:#3d2f1e;color:#e0b872;}
+  .b-etc{background:#2a2f3d;color:var(--sub);}
+  .status{font-size:11px;padding:2px 8px;border-radius:5px;margin-left:auto;}
+  .s-done{background:#1e4620;color:var(--accent2);}
+  .s-doing{background:#4a3319;color:var(--warn);}
+  .s-todo{background:#2a2f3d;color:var(--sub);}
+
+  .date{font-size:12px;color:var(--sub);margin-bottom:14px;}
+
+  /* 3축 */
+  .q{margin:14px 0 0;}
+  .q-label{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.5px;margin-bottom:4px;}
+  .q-label.why{color:var(--warn);}
+  .q-label.how{color:var(--purple);}
+  .q-body{background:var(--card2);border-radius:8px;padding:10px 14px;font-size:14px;
+          border-left:2px solid var(--line);}
+  .q-body.empty{color:#5a6273;font-style:italic;}
+
+  /* 면접 대비 */
+  .interview{margin-top:16px;background:#141d17;border:1px solid #1e4620;
+             border-radius:8px;padding:12px 16px;}
+  .interview .t{font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:6px;}
+  .interview ul{margin:0;padding-left:18px;font-size:13.5px;}
+  .interview li{margin:5px 0;}
+  .interview .a{color:var(--sub);}
+
+  /* 막힌 것 */
+  .stuck{margin-top:12px;background:#1f1618;border:1px solid #4a2226;
+         border-radius:8px;padding:10px 14px;font-size:13.5px;}
+  .stuck .t{font-size:12px;font-weight:700;color:var(--danger);margin-bottom:5px;}
+
+  code{background:#0b0d13;color:#9ecbff;padding:2px 6px;border-radius:4px;font-size:13px;
+       font-family:"D2Coding","Consolas",monospace;}
+  pre{background:#0b0d13;border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+      overflow-x:auto;font-size:13px;font-family:"D2Coding","Consolas",monospace;color:#c9d1d9;}
+
+  .tpl{border:1px dashed #3a4152;background:#12151d;}
+  .tpl .tech-head h3{color:var(--sub);}
+
+  footer{color:#5a6273;font-size:12px;text-align:center;margin-top:34px;padding-top:18px;
+         border-top:1px solid var(--line);}
+  @media(max-width:700px){.toc ul{columns:1;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>HaruVerse 기술 노트<span class="dot">.</span></h1>
+    <div class="sub">쓴 기술마다 3줄로 남긴다 · 포트폴리오 &amp; 학습 겸용 · 박하루</div>
+    <div class="rule">
+      <b>작성 규칙</b> — ① AI가 코드 주면 <b>복붙 전에 "왜 이렇게 했어?" 물어보고</b> 바로 여기 3줄 적기 (나중에 정리 X)<br>
+      ② <b>뭐냐 / 왜 썼냐 / 어떻게 동작하냐</b> — 이 3개만 채우면 됨. 길게 쓰지 말 것<br>
+      ③ 면접 대비 Q&amp;A는 <b>생각날 때만</b>, 막힌 건 솔직하게 적어두기<br>
+      ④ <b>목표: 면접 전에 이 노트만 읽어도 "왜 이 기술 쓰셨어요?"에 답이 나오게</b>
+    </div>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ul>
+      <li><a href="#tpl">▸ [양식] 복사해서 쓰기</a></li>
+      <li><a href="#k3s">k3s</a></li>
+      <li><a href="#argocd">ArgoCD</a></li>
+      <li><a href="#docker">Docker</a></li>
+      <li><a href="#springboot">Spring Boot</a></li>
+      <li><a href="#react">React</a></li>
+      <!-- 기술 추가할 때마다 여기에 한 줄 -->
+    </ul>
+  </div>
+
+  <!-- ═══════════ 양식 (복사용) ═══════════ -->
+  <div class="tech tpl" id="tpl">
+    <div class="tech-head">
+      <h3>[기술 이름]</h3>
+      <span class="badge b-etc">분류</span>
+      <span class="status s-todo">예정</span>
+    </div>
+    <div class="date">📅 학습일: ____-__-__ &nbsp;|&nbsp; 적용: HaruVerse ○○</div>
+
+    <div class="q">
+      <div class="q-label">① 뭐냐 (WHAT)</div>
+      <div class="q-body empty">한 줄로. "이게 뭐 하는 물건인지" 남한테 설명하듯.</div>
+    </div>
+
+    <div class="q">
+      <div class="q-label why">② 왜 썼냐 (WHY) ⭐ 면접 핵심</div>
+      <div class="q-body empty">"AI가 하래서" ❌ / "이 문제가 있어서, 대안은 ○○인데 이게 나아서" ⭕</div>
+    </div>
+
+    <div class="q">
+      <div class="q-label how">③ 어떻게 동작하냐 (HOW)</div>
+      <div class="q-body empty">핵심 흐름만. 에러 났을 때 원인 찾을 수 있을 정도로.</div>
+    </div>
+
+    <div class="interview">
+      <div class="t">💬 예상 질문 &amp; 내 답변</div>
+      <ul>
+        <li>Q. <br><span class="a">A. </span></li>
+      </ul>
+    </div>
+
+    <div class="stuck">
+      <div class="t">⚠️ 아직 모르는 것 / 막힌 것 (솔직하게)</div>
+      <div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 실제 기술 카드 ═══════════ -->
+
+  <div class="tech" id="k3s">
+    <div class="tech-head">
+      <h3>k3s</h3>
+      <span class="badge b-infra">인프라</span>
+      <span class="status s-todo">예정</span>
+    </div>
+    <div class="date">📅 학습일: ____-__-__ &nbsp;|&nbsp; 적용: 맥미니 셀프호스팅</div>
+
+    <div class="q">
+      <div class="q-label">① 뭐냐 (WHAT)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+    <div class="q">
+      <div class="q-label why">② 왜 썼냐 (WHY) ⭐</div>
+      <div class="q-body empty">힌트: 맥미니 1대 환경 / 일반 K8s는 무거움 / 경량이 필요했던 이유</div>
+    </div>
+    <div class="q">
+      <div class="q-label how">③ 어떻게 동작하냐 (HOW)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+
+    <div class="interview">
+      <div class="t">💬 예상 질문 &amp; 내 답변</div>
+      <ul>
+        <li>Q. 노드 1대인데 K8s를 쓴 이유가 뭔가요?<br><span class="a">A. </span></li>
+        <li>Q. 왜 K8s 대신 k3s인가요?<br><span class="a">A. </span></li>
+      </ul>
+    </div>
+    <div class="stuck">
+      <div class="t">⚠️ 아직 모르는 것 / 막힌 것</div>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="tech" id="argocd">
+    <div class="tech-head">
+      <h3>ArgoCD</h3>
+      <span class="badge b-devops">DevOps</span>
+      <span class="status s-todo">예정</span>
+    </div>
+    <div class="date">📅 학습일: ____-__-__ &nbsp;|&nbsp; 적용: GitOps 배포</div>
+
+    <div class="q">
+      <div class="q-label">① 뭐냐 (WHAT)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+    <div class="q">
+      <div class="q-label why">② 왜 썼냐 (WHY) ⭐</div>
+      <div class="q-body empty">힌트: GitHub Actions만으로도 배포 가능한데 왜? → Push vs Pull / 보안(외부에 서버 권한 안 줌) / 자동 원복</div>
+    </div>
+    <div class="q">
+      <div class="q-label how">③ 어떻게 동작하냐 (HOW)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+
+    <div class="interview">
+      <div class="t">💬 예상 질문 &amp; 내 답변</div>
+      <ul>
+        <li>Q. GitHub Actions로도 배포되는데 ArgoCD를 왜 쓰나요?<br><span class="a">A. </span></li>
+        <li>Q. GitOps가 뭔가요?<br><span class="a">A. </span></li>
+      </ul>
+    </div>
+    <div class="stuck">
+      <div class="t">⚠️ 아직 모르는 것 / 막힌 것</div>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="tech" id="docker">
+    <div class="tech-head">
+      <h3>Docker</h3>
+      <span class="badge b-infra">인프라</span>
+      <span class="status s-todo">예정</span>
+    </div>
+    <div class="date">📅 학습일: ____-__-__ &nbsp;|&nbsp; 적용: 앱 컨테이너화</div>
+
+    <div class="q">
+      <div class="q-label">① 뭐냐 (WHAT)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+    <div class="q">
+      <div class="q-label why">② 왜 썼냐 (WHY) ⭐</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+    <div class="q">
+      <div class="q-label how">③ 어떻게 동작하냐 (HOW)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+
+    <div class="interview">
+      <div class="t">💬 예상 질문 &amp; 내 답변</div>
+      <ul>
+        <li>Q. <br><span class="a">A. </span></li>
+      </ul>
+    </div>
+    <div class="stuck">
+      <div class="t">⚠️ 아직 모르는 것 / 막힌 것</div>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="tech" id="springboot">
+    <div class="tech-head">
+      <h3>Spring Boot</h3>
+      <span class="badge b-back">백엔드</span>
+      <span class="status s-doing">학습 중</span>
+    </div>
+    <div class="date">📅 학습일: ____-__-__ &nbsp;|&nbsp; 적용: HaruVerse API</div>
+
+    <div class="q">
+      <div class="q-label">① 뭐냐 (WHAT)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+    <div class="q">
+      <div class="q-label why">② 왜 썼냐 (WHY) ⭐</div>
+      <div class="q-body empty">힌트: PHP 5년 → Spring 전환 이유 / 왜 Node나 다른 게 아니라 Spring인지</div>
+    </div>
+    <div class="q">
+      <div class="q-label how">③ 어떻게 동작하냐 (HOW)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+
+    <div class="interview">
+      <div class="t">💬 예상 질문 &amp; 내 답변</div>
+      <ul>
+        <li>Q. PHP 하시다가 Spring으로 오신 이유가 뭔가요?<br><span class="a">A. </span></li>
+      </ul>
+    </div>
+    <div class="stuck">
+      <div class="t">⚠️ 아직 모르는 것 / 막힌 것</div>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="tech" id="react">
+    <div class="tech-head">
+      <h3>React</h3>
+      <span class="badge b-front">프론트</span>
+      <span class="status s-todo">예정</span>
+    </div>
+    <div class="date">📅 학습일: ____-__-__ &nbsp;|&nbsp; 적용: HaruVerse 화면</div>
+
+    <div class="q">
+      <div class="q-label">① 뭐냐 (WHAT)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+    <div class="q">
+      <div class="q-label why">② 왜 썼냐 (WHY) ⭐</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+    <div class="q">
+      <div class="q-label how">③ 어떻게 동작하냐 (HOW)</div>
+      <div class="q-body empty">(작성 예정)</div>
+    </div>
+
+    <div class="interview">
+      <div class="t">💬 예상 질문 &amp; 내 답변</div>
+      <ul>
+        <li>Q. <br><span class="a">A. </span></li>
+      </ul>
+    </div>
+    <div class="stuck">
+      <div class="t">⚠️ 아직 모르는 것 / 막힌 것</div>
+      <div></div>
+    </div>
+  </div>
+
+  <footer>
+    HaruVerse 기술 노트 · 만들면서 즉시 채우기 · 나중에 정리하려 하지 말 것
+  </footer>
+
+</div>
+</body>
+</html>
