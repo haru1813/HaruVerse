@@ -5,6 +5,7 @@
 # 접속:  프론트   http://localhost:303
 #        백엔드   http://localhost:304/api/works
 #        MariaDB  localhost:305
+#        검색     http://localhost:306   (Elasticsearch)
 #
 # 로컬 개발(5173 / 8080)과 포트가 겹치지 않아 동시에 띄울 수 있고,
 # ★DB는 하나를 함께 쓴다★ — 로컬에서 쓴 글이 컨테이너에도 그대로 보인다.
@@ -44,6 +45,37 @@ services:
       timeout: 5s
       retries: 20
       start_period: 30s
+    restart: unless-stopped
+
+  elasticsearch:
+    # Spring Boot 3.4가 관리하는 elasticsearch-java 클라이언트가 8.15 계열이라 서버도 맞춘다.
+    # 메이저가 어긋나면 클라이언트가 붙는 순간이 아니라 쿼리 시점에 이상하게 실패한다.
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: haruverse-elasticsearch
+    ports:
+      # 외부 306 → 내부 9200. 로컬 백엔드와 색인 확인용 curl 이 이 포트로 붙는다.
+      - "306:9200"
+    environment:
+      # 노드 하나짜리 개발용 — 클러스터 구성·투표 설정을 건너뛴다
+      - discovery.type=single-node
+      # ★로컬 전용★ 8.x 는 기본이 보안 켜짐(TLS+비밀번호)이라 그대로 두면
+      #   http 로 접근이 안 된다. 운영에 올릴 때는 반드시 다시 켤 것.
+      - xpack.security.enabled=false
+      # ★heap 고정★ 안 주면 호스트 메모리의 절반을 잡으려 든다.
+      #   맥미니(16GB, 다른 컨테이너와 공유)를 생각하면 반드시 제한해야 한다.
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - TZ=Asia/Seoul
+    volumes:
+      # named volume — compose down 해도 색인이 남는다
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      # ★yellow 도 정상으로 본다★ 단일 노드라 복제본을 배치할 곳이 없어
+      #   상태가 절대 green 이 되지 않는다. green 만 기다리면 영원히 unhealthy.
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
     restart: unless-stopped
 
   backend:
@@ -95,3 +127,4 @@ services:
 
 volumes:
   mariadb-data:
+  es-data:
