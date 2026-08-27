@@ -42,7 +42,11 @@ public class WorkController {
             @RequestParam(required = false) String genre,
             @RequestParam(required = false, name = "q") String keyword,
             @RequestParam(required = false) String studio,
-            @PageableDefault(size = 20, sort = "releaseDate", direction = Sort.Direction.DESC) Pageable pageable
+            // ★기본 정렬을 여기서 주지 않는다★
+            //   검색어가 있을 때 이 정렬이 Elasticsearch 로 넘어가면 관련도 순서를 덮어써서,
+            //   "가장 잘 맞는 작품"이 아니라 "가장 최근 작품"이 위로 온다.
+            //   정렬 기본값은 서비스가 '검색이 아닐 때만' 적용한다.
+            @PageableDefault(size = 20) Pageable pageable
     ) {
         return ResponseEntity.ok(workService.getWorks(type, season, genre, keyword, studio, pageable));
     }

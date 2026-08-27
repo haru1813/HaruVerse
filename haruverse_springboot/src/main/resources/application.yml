@@ -44,7 +44,10 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: update      # 엔티티 기준 테이블 자동 생성/변경 (개발용)
-    show-sql: true
+    # 로컬 개발에서는 쿼리를 보는 게 학습·디버깅에 도움이 되지만,
+    # 컨테이너에서는 로그가 SQL로 뒤덮여 정작 필요한 경고를 못 찾는다.
+    # (실제로 ES 폴백 경고 한 줄이 SQL 수백 줄에 파묻혀 진단이 늦어졌다)
+    show-sql: ${SHOW_SQL:true}
     properties:
       hibernate:
         format_sql: true

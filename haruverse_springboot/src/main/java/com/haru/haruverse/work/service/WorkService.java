@@ -1,6 +1,8 @@
 package com.haru.haruverse.work.service;
 
 import com.haru.haruverse.global.response.PageResponse;
+import com.haru.haruverse.search.document.WorkDocument;
+import com.haru.haruverse.search.service.WorkSearchService;
 import com.haru.haruverse.work.dto.WorkDetailResponse;
 import com.haru.haruverse.work.dto.WorkResponse;
 import com.haru.haruverse.work.entity.Work;
@@ -8,6 +10,8 @@ import com.haru.haruverse.work.entity.WorkType;
 import com.haru.haruverse.work.repository.WorkRepository;
 import com.haru.haruverse.work.repository.WorkSpecs;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,9 +31,11 @@ import java.util.NoSuchElementException;
 public class WorkService {
 
     private final WorkRepository workRepository;
+    private final WorkSearchService searchService;
 
-    public WorkService(WorkRepository workRepository) {
+    public WorkService(WorkRepository workRepository, WorkSearchService searchService) {
         this.workRepository = workRepository;
+        this.searchService = searchService;
     }
 
     /**
@@ -42,9 +48,35 @@ public class WorkService {
     @Transactional(readOnly = true)
     public PageResponse<WorkResponse> getWorks(WorkType type, String season, String genre,
                                                String keyword, String studio, Pageable pageable) {
+        // ★키워드가 있을 때만 Elasticsearch★
+        //   검색어가 없으면 그냥 목록을 훑는 것이고, 그건 DB가 원본이라 더 정확하다.
+        //   ES를 항상 거치면 색인이 밀렸을 때 목록 자체가 어긋난다.
+        //   ES가 값을 하는 건 "관련도"가 필요한 순간뿐이다.
+        if (keyword != null && !keyword.isBlank()) {
+            Page<WorkDocument> found =
+                    searchService.search(keyword, type, season, genre, studio, pageable);
+            // null = ES에 못 붙었다는 신호 → 아래 DB 검색으로 흘러간다
+            if (found != null) {
+                return PageResponse.of(found, WorkResponse::fromDocument);
+            }
+        }
+
         Page<Work> works = workRepository.findAll(
-                WorkSpecs.filter(type, season, genre, keyword, studio), pageable);
+                WorkSpecs.filter(type, season, genre, keyword, studio), withDefaultSort(pageable));
         return PageResponse.of(works, WorkResponse::from); // 트랜잭션 안에서 변환
+    }
+
+    /**
+     * 목록 기본 정렬 — 최신순.
+     *
+     * <p>컨트롤러가 아니라 여기서 붙이는 이유: 검색(ES) 경로에는 이 정렬이 가면 안 된다.
+     * ES에 정렬을 주면 관련도(_score)를 버리고 그 기준으로 줄을 세운다.
+     * 클라이언트가 {@code sort=} 를 명시했으면 그 뜻을 존중해 그대로 둔다.
+     */
+    private Pageable withDefaultSort(Pageable pageable) {
+        if (pageable.getSort().isSorted()) return pageable;
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "releaseDate"));
     }
 
     /** 작품 단건. 없으면 404로 이어질 예외를 던진다. */

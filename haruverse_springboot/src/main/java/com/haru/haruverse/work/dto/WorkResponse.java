@@ -1,5 +1,6 @@
 package com.haru.haruverse.work.dto;
 
+import com.haru.haruverse.search.document.WorkDocument;
 import com.haru.haruverse.work.entity.Work;
 import com.haru.haruverse.work.entity.WorkType;
 
@@ -29,6 +30,30 @@ public record WorkResponse(
         // 게임에만 값이 있다(애니는 빈 배열) — "PC · PlayStation" 처럼 보여준다
         List<String> platforms
 ) {
+    /**
+     * 검색 문서 → DTO.
+     *
+     * <p><b>★ES 결과로 DB를 다시 읽지 않는 이유★</b>
+     * 화면에 필요한 값을 WorkDocument 에 전부 비정규화해 담아뒀다.
+     * id 목록으로 DB를 다시 조회하면 요청이 한 번 더 나가고, ES가 매긴 관련도 순서를
+     * 손으로 다시 맞춰야 한다(DB는 그 순서를 모른다). 비정규화를 해둔 이유가 이것이다.
+     *
+     * <p>대신 색인이 밀리면 결과가 옛날 값일 수 있다 — 재색인 API로 복구한다.
+     */
+    public static WorkResponse fromDocument(WorkDocument doc) {
+        return new WorkResponse(
+                doc.getId(),
+                doc.getTitle(),
+                doc.workType(),
+                doc.getSeason(),
+                doc.getRating() == null ? null : BigDecimal.valueOf(doc.getRating()),
+                doc.getImageUrl(),
+                doc.getReleaseDate() == null ? null : LocalDate.parse(doc.getReleaseDate()),
+                doc.getGenres(),
+                doc.getPlatforms()
+        );
+    }
+
     // 엔티티 → DTO 변환 (정적 팩터리). PageResponse.of(page, WorkResponse::from) 형태로 쓴다.
     public static WorkResponse from(Work work) {
         return new WorkResponse(

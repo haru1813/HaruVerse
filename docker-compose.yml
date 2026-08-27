@@ -96,6 +96,10 @@ services:
       # ★컨테이너끼리는 서비스명★ — localhost:306 이 아니다
       ELASTICSEARCH_URIS: http://elasticsearch:9200
 
+      # 컨테이너 로그는 SQL 없이 — 경고가 묻히지 않게
+      SHOW_SQL: "false"
+
+
       RAWG_API_KEY: ${RAWG_API_KEY:-}
       # ★빈 값을 넘기면 안 된다★ — Spring 입장에선 "정의된 빈 문자열"이라
       #   application.yml 의 기본값을 덮어버리고, HS256 키 길이 미달로 기동이 실패한다.
