@@ -8,9 +8,11 @@ import com.haru.haruverse.studio.service.StudioService;
 import com.haru.haruverse.work.entity.Work;
 import com.haru.haruverse.work.entity.WorkSource;
 import com.haru.haruverse.work.entity.WorkType;
+import com.haru.haruverse.search.event.WorkSavedEvent;
 import com.haru.haruverse.work.repository.WorkRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,13 +37,17 @@ public class RawgWorkWriter {
     private final WorkRepository workRepository;
     private final StudioService studioService;
     private final GenreService genreService;
+    /** 색인 반영은 이벤트로 넘긴다 — 수집기가 검색을 몰라도 되게 */
+    private final ApplicationEventPublisher events;
 
     public RawgWorkWriter(WorkRepository workRepository,
                           StudioService studioService,
-                          GenreService genreService) {
+                          GenreService genreService,
+                          ApplicationEventPublisher events) {
         this.workRepository = workRepository;
         this.studioService = studioService;
         this.genreService = genreService;
+        this.events = events;
     }
 
     /**
@@ -73,6 +79,8 @@ public class RawgWorkWriter {
                     if (studio != null) existing.assignStudio(studio);
                     if (!genres.isEmpty()) existing.replaceGenres(genres);
                     if (!platforms.isEmpty()) existing.replacePlatforms(platforms);
+                    // 수정 분기도 알린다 (더티 체킹이라 save() 호출이 없다)
+                    events.publishEvent(new WorkSavedEvent(existing.getId()));
                     return false;
                 })
                 .orElseGet(() -> {
@@ -83,7 +91,8 @@ public class RawgWorkWriter {
                     work.assignStudio(studio);
                     work.replaceGenres(genres);
                     work.replacePlatforms(platforms);
-                    workRepository.save(work);
+                    workRepository.save(work); // id는 여기서 부여된다
+                    events.publishEvent(new WorkSavedEvent(work.getId()));
                     return true;
                 });
     }

@@ -62,6 +62,10 @@ public class SecurityConfig {
                     //   DB를 오염시킬 수 있다. 공개 배포 전에 반드시 닫아야 하는 구멍이었다.
                     //   승격은 DB에서 직접 한다 (관리자 화면이 아직 없다).
                     .requestMatchers("/api/collect/**").hasRole("ADMIN")
+                    // 색인 관리도 같은 이유로 관리자만. 재색인은 DB 전체를 읽어 ES에 미는
+                    // 작업이라 반복 호출 자체가 부하다.
+                    // ★POST 만 잠근다★ — 검색(GET /api/search/...)은 공개여야 한다.
+                    .requestMatchers(HttpMethod.POST, "/api/search/**").hasRole("ADMIN")
                     // 그 외는 토큰 필요
                     .anyRequest().authenticated())
             // 인증 안 된 요청 → 401 (기본 403 대신 명확하게)

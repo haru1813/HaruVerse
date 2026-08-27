@@ -30,6 +30,11 @@ dependencies {
     // MyBatis — SQL 매퍼 (복잡 쿼리·통계용). Boot BOM이 버전 관리 안 하므로 버전 명시
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
 
+    // Elasticsearch — 통합검색.
+    //   서버 버전(8.15.3)은 docker-compose 에 고정돼 있다. 여기서 관리하는 클라이언트와
+    //   메이저가 어긋나면 연결은 되는데 쿼리 시점에 이상하게 실패하므로 함께 올려야 한다.
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+
     // Spring Security — 인증·인가 (로그인/회원가입 API 보호)
     implementation 'org.springframework.boot:spring-boot-starter-security'
 

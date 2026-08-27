@@ -28,6 +28,14 @@ spring:
         max-page-size: 100
 
   # JPA(Hibernate)
+  elasticsearch:
+    # 로컬은 306(도커 외부 포트), 컨테이너끼리는 SPRING_ELASTICSEARCH_URIS 로 덮어쓴다.
+    uris: ${ELASTICSEARCH_URIS:http://localhost:306}
+    # ★타임아웃을 짧게★ 검색은 부가 기능이라, ES가 죽었을 때 요청이 오래 매달리면
+    #   그게 곧 서비스 장애가 된다. 빨리 실패하고 DB 검색으로 넘어가는 편이 낫다.
+    connection-timeout: 3s
+    socket-timeout: 10s
+
   jpa:
     # ★open-in-view 끄기★ (기본값 true)
     #   true면 컨트롤러·뷰 렌더링 시점까지 영속성 컨텍스트와 DB 커넥션이 유지된다.

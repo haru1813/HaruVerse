@@ -93,6 +93,9 @@ services:
 
       # RAWG 키는 이미지에 굽지 않고 실행 시점에 호스트 환경변수로 받는다.
       # 없으면 빈 값 → 게임 수집 API 만 503, 나머지는 정상 동작.
+      # ★컨테이너끼리는 서비스명★ — localhost:306 이 아니다
+      ELASTICSEARCH_URIS: http://elasticsearch:9200
+
       RAWG_API_KEY: ${RAWG_API_KEY:-}
       # ★빈 값을 넘기면 안 된다★ — Spring 입장에선 "정의된 빈 문자열"이라
       #   application.yml 의 기본값을 덮어버리고, HS256 키 길이 미달로 기동이 실패한다.
@@ -102,6 +105,11 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+      elasticsearch:
+        # ★service_healthy 가 아니라 service_started★
+        #   검색은 부가 기능이다. ES가 안 떠도 앱은 떠야 하고, DB 검색으로 동작해야 한다.
+        #   healthy 를 기다리게 하면 ES 장애가 곧 전체 장애가 된다.
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
       interval: 5s

@@ -1,0 +1,21 @@
+{
+  "index": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "analysis": {
+    "filter": {
+      "possessive": {
+        "type": "stemmer",
+        "language": "possessive_english"
+      }
+    },
+    "analyzer": {
+      "work_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding", "possessive"]
+      }
+    }
+  }
+}
