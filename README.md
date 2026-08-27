@@ -8,7 +8,7 @@
 
 ```
 Spring Boot 3.4 / Java 21 · React 19 / TypeScript · MariaDB 11 · Docker Compose
-백엔드 테스트 128 (JUnit) · E2E 139 (Playwright)
+백엔드 테스트 134 (JUnit) · E2E 139 (Playwright)
 ```
 
 ---
@@ -58,6 +58,39 @@ exists 검사와 INSERT 사이의 틈으로 동시 요청이 들어오면 유니
 잡아서 "이미 있으니 성공"으로 처리하고 싶어지지만, **JPA는 INSERT가 터진 시점에 트랜잭션을 rollback-only 로 마킹합니다.**
 예외를 삼켜도 커밋 때 `UnexpectedRollbackException` 으로 다시 터집니다.
 → 밖으로 내보내고 핸들러가 409로 응답합니다. 프론트는 낙관적 UI라 사용자 눈에는 문제가 없습니다.
+
+### 수집 API 를 관리자만 부를 수 있게
+
+`/api/collect/**` 는 Jikan·RAWG 를 **대신 호출**합니다. 로그인만 하면 누구나 부를 수 있게 두면,
+가입한 아무나 외부 API 쿼터를 소진시키고 DB 를 오염시킬 수 있습니다.
+→ JWT 에 `role` 클레임을 싣고 `hasRole("ADMIN")` 으로 막았습니다.
+
+두 가지를 조심해야 했습니다.
+
+**① 이미 행이 있는 표에 NOT NULL 컬럼은 그냥 안 붙습니다.**
+`ddl-auto=update` 는 기존 행을 뭘로 채울지 몰라서 **조용히 건너뜁니다**(에러도 안 납니다).
+DB 기본값을 함께 줘야 추가에 성공합니다.
+
+```java
+@Column(nullable = false, length = 20,
+        columnDefinition = "varchar(20) not null default 'USER'")
+private MemberRole role = MemberRole.USER;
+```
+
+**② 403 이 401 로 덮입니다.**
+Spring Security 는 403 을 낼 때 `response.sendError(403)` 을 부르고, 서블릿은 `/error` 로 **다시 디스패치**합니다.
+그 재요청도 필터 체인을 타는데 그때는 SecurityContext 가 비어 있어 `authenticated()` 에 걸립니다.
+→ "권한 없음"이 "로그인하라"로 바뀝니다. **MockMvc 는 ERROR 디스패치를 타지 않아 테스트에서는 403 이 보입니다.**
+
+```java
+.dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
+```
+
+| 요청자 | 결과 |
+|---|---|
+| 비로그인 | 401 |
+| 일반 회원(USER) | **403** |
+| 관리자(ADMIN) | 200 |
 
 ### 평점 스케일 통일
 
@@ -126,7 +159,7 @@ cd haruverse_react && npm install && npm run dev # :5173
 ### 테스트
 
 ```bash
-cd haruverse_springboot && ./gradlew test        # 128
+cd haruverse_springboot && ./gradlew test        # 134
 cd haruverse_react && npx playwright test        # 139
 ```
 
@@ -183,7 +216,6 @@ docs/                    설계 문서 (기획 · 패키지 구조 · API 명세
 
 - **Elasticsearch 통합검색** — 원래 계획한 핵심 기능인데 아직입니다. 지금 검색은 `LIKE '%키워드%'` 라 **"프리렌"으로 `Frieren` 이 안 나옵니다.** 한글 형태소·자동완성·오타교정이 여기서 필요합니다.
 - **캐릭터 데이터** — 애니 86편 중 캐릭터가 채워진 건 2편뿐입니다. MyAnimeList 가 장기 장애(504) 중이라 수집이 막혀 있습니다. (3회 연속 실패하면 중단하도록 되어 있습니다)
-- **수집 API 권한** — 지금은 로그인한 회원이면 누구나 호출할 수 있습니다. 공개 배포 전에 관리자 권한이 필요합니다.
 - **배포** — 맥미니 셀프호스팅으로 올릴 예정입니다.
 - 게시글 검색, 이미지 업로드, 대댓글
 

@@ -2,6 +2,7 @@ package com.haru.haruverse.global.config;
 
 import com.haru.haruverse.global.jwt.JwtAuthenticationFilter;
 import com.haru.haruverse.global.jwt.JwtTokenProvider;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +35,13 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 인가 규칙
             .authorizeHttpRequests(auth -> auth
+                    // ★ERROR 디스패치를 열어둔다★
+                    //   403을 낼 때 스프링은 response.sendError(403)을 부르고, 그러면
+                    //   서블릿이 /error 로 <b>다시 디스패치</b>한다. 그 재요청도 이 필터 체인을 타는데,
+                    //   그때는 SecurityContext가 비어 있어 anyRequest().authenticated()에 걸린다.
+                    //   → 원래 내려던 403이 401로 덮인다("권한 없음"이 "로그인하라"로 바뀐다).
+                    //   MockMvc는 ERROR 디스패치를 타지 않아 테스트에서는 403이 보여서, 이 차이가 잘 안 드러난다.
+                    .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
                     // 인증 없이 열어둘 곳: 로그인·회원가입, 헬스체크, H2 콘솔
                     .requestMatchers("/api/auth/**", "/api/health", "/h2-console/**").permitAll()
                     // 작품 조회는 비로그인도 볼 수 있어야 함 (설계문서 ④ work 섹션 — 인증 '-')
@@ -48,6 +56,12 @@ public class SecurityConfig {
                     // 쓰기(POST/PUT/DELETE)는 아래 anyRequest().authenticated()에 걸린다.
                     .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
+                    // ★수집 API는 관리자만★
+                    //   /api/collect/** 는 Jikan·RAWG를 대신 호출한다. 로그인만 하면
+                    //   누구나 부를 수 있게 두면, 가입한 아무나 외부 API 쿼터를 소진시키고
+                    //   DB를 오염시킬 수 있다. 공개 배포 전에 반드시 닫아야 하는 구멍이었다.
+                    //   승격은 DB에서 직접 한다 (관리자 화면이 아직 없다).
+                    .requestMatchers("/api/collect/**").hasRole("ADMIN")
                     // 그 외는 토큰 필요
                     .anyRequest().authenticated())
             // 인증 안 된 요청 → 401 (기본 403 대신 명확하게)

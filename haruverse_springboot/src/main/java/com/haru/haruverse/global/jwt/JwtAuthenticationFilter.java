@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -27,8 +28,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
         if (token != null && tokenProvider.validate(token)) {
             String email = tokenProvider.getEmail(token);
-            // principal = 이메일. 권한 목록은 지금은 비움(추후 role 추가 시 확장)
-            var authentication = new UsernamePasswordAuthenticationToken(email, null, List.of());
+            // principal = 이메일, 권한 = 토큰의 role 클레임.
+            // SecurityConfig의 hasRole("ADMIN")이 여기 담긴 "ROLE_ADMIN"을 본다.
+            var authority = new SimpleGrantedAuthority(tokenProvider.getRole(token).authority());
+            var authentication = new UsernamePasswordAuthenticationToken(email, null, List.of(authority));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
         chain.doFilter(request, response); // 토큰이 없어도 통과 → 인가는 SecurityConfig가 판단

@@ -47,7 +47,7 @@ public class AuthService {
             throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
-        String token = tokenProvider.createToken(member.getEmail());
+        String token = tokenProvider.createToken(member.getEmail(), member.getRole());
         return new LoginResponse(token, member.getEmail(), member.getNickname());
     }
 }

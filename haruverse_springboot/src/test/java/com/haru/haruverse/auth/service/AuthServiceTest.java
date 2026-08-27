@@ -5,6 +5,7 @@ import com.haru.haruverse.auth.dto.LoginResponse;
 import com.haru.haruverse.auth.dto.SignupRequest;
 import com.haru.haruverse.global.jwt.JwtTokenProvider;
 import com.haru.haruverse.member.entity.Member;
+import com.haru.haruverse.member.entity.MemberRole;
 import com.haru.haruverse.member.service.MemberService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -89,7 +90,7 @@ class AuthServiceTest {
         Member member = new Member("a@haru.com", "HASH", "에이");
         given(memberService.findByEmail("a@haru.com")).willReturn(Optional.of(member));
         given(passwordEncoder.matches("raw-pw", "HASH")).willReturn(true);
-        given(tokenProvider.createToken("a@haru.com")).willReturn("JWT-TOKEN");
+        given(tokenProvider.createToken("a@haru.com", MemberRole.USER)).willReturn("JWT-TOKEN");
 
         LoginResponse res = authService.login(new LoginRequest("a@haru.com", "raw-pw"));
 
@@ -109,7 +110,7 @@ class AuthServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("이메일 또는 비밀번호가 올바르지 않습니다.");
 
-        verify(tokenProvider, never()).createToken(anyString());
+        verify(tokenProvider, never()).createToken(anyString(), any());
     }
 
     @Test
@@ -121,6 +122,6 @@ class AuthServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("이메일 또는 비밀번호가 올바르지 않습니다.");
 
-        verify(tokenProvider, never()).createToken(anyString());
+        verify(tokenProvider, never()).createToken(anyString(), any());
     }
 }
