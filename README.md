@@ -8,7 +8,7 @@
 
 ```
 Spring Boot 3.4 / Java 21 · React 19 / TypeScript · MariaDB 11 · Docker Compose
-백엔드 테스트 139 (JUnit) · E2E 152 (Playwright)
+백엔드 테스트 149 (JUnit) · E2E 156 (Playwright)
 ```
 
 ---
@@ -160,8 +160,8 @@ cd haruverse_react && npm install && npm run dev # :5173
 ### 테스트
 
 ```bash
-cd haruverse_springboot && ./gradlew test        # 139
-cd haruverse_react && npx playwright test        # 152
+cd haruverse_springboot && ./gradlew test        # 149
+cd haruverse_react && npx playwright test        # 156
 ```
 
 ---
@@ -215,9 +215,9 @@ docs/                    설계 문서 (기획 · 패키지 구조 · API 명세
 
 숨기는 것보다 적어두는 편이 낫다고 생각해서 남깁니다.
 
-- **한글 검색** — 위와 별개의 **데이터 문제**입니다. Jikan·RAWG 가 주는 제목이 전부 영문이라
-  (`Frieren: Beyond Journey's End`) 저장된 한글 제목이 **한 건도 없습니다.**
-  검색 엔진을 바꿔도 해결되지 않고, 한글 제목·별칭을 주는 출처를 따로 붙여야 합니다.
+- **한글 제목 나머지 21편** — TMDB 매칭이 애니 86편 중 65편(76%)에서 성공했습니다.
+  못 채운 건 대부분 시즌 표기가 특이하거나 TMDB 에 없는 작품입니다.
+  ★확신이 없으면 채우지 않습니다★ — 틀린 제목은 비어 있는 것보다 나쁩니다.
 - **캐릭터 데이터** — 애니 86편 중 캐릭터가 채워진 건 2편뿐입니다. MyAnimeList 가 장기 장애(504) 중이라 수집이 막혀 있습니다. (3회 연속 실패하면 중단하도록 되어 있습니다)
 - **배포** — 맥미니 셀프호스팅으로 올릴 예정입니다.
 - 게시글 검색, 이미지 업로드, 대댓글
@@ -228,5 +228,6 @@ docs/                    설계 문서 (기획 · 패키지 구조 · API 명세
 
 - 애니메이션 — [Jikan API](https://jikan.moe) (MyAnimeList 비공식 API)
 - 게임 — [RAWG Video Games Database](https://rawg.io)
+- 한국어 제목 — [TMDB](https://www.themoviedb.org)
 
 비상업적 개인 프로젝트입니다. 모든 작품 정보·이미지의 저작권은 원 권리자에게 있습니다.

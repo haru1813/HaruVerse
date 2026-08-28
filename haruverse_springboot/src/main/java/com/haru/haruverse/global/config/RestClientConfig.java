@@ -39,6 +39,22 @@ public class RestClientConfig {
     }
 
     @Bean
+    public RestClient tmdbRestClient(
+            @Value("${external.tmdb.base-url}") String baseUrl,
+            @Value("${external.tmdb.connect-timeout-ms}") long connectTimeoutMs,
+            @Value("${external.tmdb.read-timeout-ms}") long readTimeoutMs) {
+
+        var settings = ClientHttpRequestFactorySettings.defaults()
+                .withConnectTimeout(Duration.ofMillis(connectTimeoutMs))
+                .withReadTimeout(Duration.ofMillis(readTimeoutMs));
+
+        return RestClient.builder()
+                .baseUrl(baseUrl)
+                .requestFactory(ClientHttpRequestFactoryBuilder.detect().build(settings))
+                .build();
+    }
+
+    @Bean
     public RestClient rawgRestClient(
             @Value("${external.rawg.base-url}") String baseUrl,
             @Value("${external.rawg.connect-timeout-ms}") long connectTimeoutMs,

@@ -60,10 +60,9 @@ public class WorkDocument {
     /**
      * 한글 제목 — <b>지금은 전부 비어 있다.</b>
      *
-     * <p>Jikan·RAWG 가 주는 제목이 전부 영문이라 저장된 한글 제목이 한 건도 없다.
-     * 즉 "프리렌"으로 검색해서 {@code Frieren} 을 찾는 건 <b>검색 엔진이 아니라 데이터 문제</b>다.
-     * 나중에 한글 제목을 주는 출처(TMDB 등)를 붙이면 이 필드만 채우면 되도록 <b>미리 열어둔다.</b>
-     * 그때 매핑을 다시 만들지 않아도 되고, 색인 구조도 그대로다.
+     * <p>Jikan·RAWG 가 주는 제목이 전부 영문이라, "프리렌"으로 {@code Frieren} 을 찾는 건
+     * <b>검색 엔진이 아니라 데이터 문제</b>였다. TMDB 에서 현지화 제목을 가져와 채운다.
+     * 매칭에 실패한 작품과 게임은 <b>비어 있다</b> — 틀린 제목을 넣는 것보다 낫다.
      */
     @MultiField(
             mainField = @Field(type = FieldType.Text, analyzer = "work_analyzer"),
@@ -128,7 +127,8 @@ public class WorkDocument {
         doc.rating = work.getRating() == null ? null : work.getRating().doubleValue();
         doc.releaseDate = work.getReleaseDate() == null ? null : work.getReleaseDate().toString();
         doc.imageUrl = work.getImageUrl();
-        // titleKo·aliases 는 아직 출처가 없다 (위 주석 참고)
+        doc.titleKo = work.getTitleKo(); // TMDB 수집으로 채워진다 (없으면 null)
+        // aliases 는 아직 출처가 없다
         return doc;
     }
 

@@ -39,6 +39,16 @@ public class Work extends BaseTimeEntity {
     @Column(nullable = false, length = 255)
     private String title;
 
+    /**
+     * 한국어 제목 — TMDB 에서 가져온다.
+     *
+     * <p><b>★nullable 이어야 한다★</b> 게임은 TMDB 에 없고, 애니도 매칭에 실패하면 못 채운다.
+     * 확신이 없을 때 억지로 채우면 <b>틀린 제목이 붙는다</b> — 그건 비어 있는 것보다 나쁘다.
+     * (TmdbTitleMatcher 가 연도·제목 두 관문을 통과한 것만 채택하는 이유)
+     */
+    @Column(name = "title_ko", length = 255)
+    private String titleKo;
+
     // ANIME / GAME — 문자열로 저장 (위 WorkType 주석 참고)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -176,6 +186,11 @@ public class Work extends BaseTimeEntity {
         this.genres.addAll(newGenres);
     }
 
+    /** 한국어 제목 지정 — TMDB 수집에서만 부른다 */
+    public void assignTitleKo(String titleKo) {
+        this.titleKo = titleKo;
+    }
+
     /** 플랫폼 통째 교체 — 재수집 때 최신 목록으로 갈아끼운다 */
     public void replacePlatforms(Set<String> newPlatforms) {
         this.platforms.clear();
@@ -184,6 +199,7 @@ public class Work extends BaseTimeEntity {
 
     public Long getId() { return id; }
     public String getTitle() { return title; }
+    public String getTitleKo() { return titleKo; }
     public Studio getStudio() { return studio; }
     public Set<Genre> getGenres() { return genres; }
     public Set<String> getPlatforms() { return platforms; }

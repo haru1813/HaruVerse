@@ -101,6 +101,9 @@ services:
 
 
       RAWG_API_KEY: ${RAWG_API_KEY:-}
+
+      # TMDB 키 — 한국어 제목 수집용. 없으면 그 수집만 503, 나머지는 정상.
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
       # ★빈 값을 넘기면 안 된다★ — Spring 입장에선 "정의된 빈 문자열"이라
       #   application.yml 의 기본값을 덮어버리고, HS256 키 길이 미달로 기동이 실패한다.
       #   그래서 여기서도 같은 개발용 기본값을 적어둔다. 운영에서는 호스트에서 지정할 것.

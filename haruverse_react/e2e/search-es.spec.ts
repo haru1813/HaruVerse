@@ -188,3 +188,61 @@ test.describe('자동완성', () => {
     await expect(page).toHaveURL(/\/\?q=frieren$/);
   });
 });
+
+/**
+ * 한글 검색 — TMDB 에서 가져온 한국어 제목으로 찾는다.
+ *
+ * <p>오랫동안 안 됐던 기능이다. Jikan·RAWG 가 주는 제목이 전부 영문이라
+ * <b>검색 엔진 문제가 아니라 데이터 문제</b>였다.
+ * TMDB 로 titleKo 를 채우고, ES 색인에 이미 열어둔 자리에 넣어 해결했다.
+ *
+ * <p>수집이 안 돼 있으면(키 없음·미수집) 후보가 0건이므로 skip 한다.
+ */
+test.describe('한글 검색', () => {
+  async function koreanTitlesExist(page: Page): Promise<boolean> {
+    return (await search(page, '프리렌')).length > 0;
+  }
+
+  test('★"프리렌"으로 Frieren 을 찾는다★', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await koreanTitlesExist(page)), '한국어 제목이 수집되지 않았습니다');
+
+    const titles = await search(page, '프리렌');
+
+    expect(titles.length).toBeGreaterThan(0);
+    expect(titles.every((t) => /frieren/i.test(t))).toBe(true);
+  });
+
+  test('다른 작품도 한글로 찾힌다', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await koreanTitlesExist(page)), '한국어 제목이 수집되지 않았습니다');
+
+    expect(await search(page, '귀멸의 칼날')).toContain('Demon Slayer: Kimetsu no Yaiba');
+    expect(await search(page, '카우보이 비밥')).toContain('Cowboy Bebop');
+  });
+
+  test('한글 자동완성도 동작한다', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await koreanTitlesExist(page)), '한국어 제목이 수집되지 않았습니다');
+
+    const titles = await page.evaluate(async () => {
+      const res = await fetch(`/api/works/suggest?q=${encodeURIComponent('프리')}`);
+      return (await res.json()).map((w: { title: string }) => w.title);
+    });
+
+    expect(titles.length).toBeGreaterThan(0);
+    expect(titles.every((t: string) => /frieren/i.test(t))).toBe(true);
+  });
+
+  test('★한국어 제목이 없는 작품은 영문으로만 찾힌다★ (억지로 채우지 않았다)', async ({ page }) => {
+    await page.goto('/');
+
+    // 게임은 TMDB 에 없어서 titleKo 가 비어 있다. 그래도 영문 검색은 된다.
+    const games = await page.evaluate(async () => {
+      const res = await fetch('/api/works?q=elden&type=GAME&size=5');
+      return (await res.json()).totalElements as number;
+    });
+
+    expect(games).toBeGreaterThan(0);
+  });
+});
