@@ -1,12 +1,17 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate, useSearchParams, useLocation, Link as RouterLink } from "react-router-dom";
-import { AppBar, Toolbar, Typography, Box, InputBase, Button, Container, Tabs, Tab, Stack, Link, IconButton, Divider, Avatar, Menu, MenuItem, ListItemIcon } from "@mui/material";
+import {
+  AppBar, Toolbar, Typography, Box, InputBase, Button, Container, Tabs, Tab,
+  Stack, Link, IconButton, Divider, Avatar, Menu, MenuItem, ListItemIcon,
+  Popper, Paper, ClickAwayListener, MenuList,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import CloseIcon from "@mui/icons-material/Close";
+import { useSuggestions } from "../hooks/useSuggestions";
 import { useAuth } from "../contexts/AuthContext";
 import { SITE } from "../lib/site";
 
@@ -212,6 +217,24 @@ function Layout({ children }: LayoutProps) {
   //   아래처럼 렌더 도중에 조정하면 React가 DOM을 건드리기 전에 즉시 다시 렌더한다.
   //   (React 공식 문서의 "props가 바뀔 때 state 조정하기" 패턴)
   const [keyword, setKeyword] = useState(currentKeyword);
+
+  // ── 자동완성 ──
+  // 검색창을 기준점(anchor)으로 후보 목록을 아래에 띄운다.
+  // ★ref 가 아니라 state★ — Popper 의 anchorEl 은 렌더 중에 읽히는 값인데,
+  //   ref.current 를 렌더에서 읽으면 요소가 붙는 시점에 다시 그려지지 않는다.
+  //   콜백 ref 로 state 에 담으면 요소가 생길 때 리렌더가 일어나 위치가 잡힌다.
+  const [searchBoxEl, setSearchBoxEl] = useState<HTMLDivElement | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [highlighted, setHighlighted] = useState(-1); // 키보드로 고른 항목 (-1 = 없음)
+  const { items: suggestions, clear: clearSuggestions } = useSuggestions(keyword, suggestOpen);
+
+  /** 후보를 고르면 그 작품으로 바로 간다 (검색 결과 목록을 거치지 않는다) */
+  const chooseSuggestion = (id: number) => {
+    setSuggestOpen(false);
+    clearSuggestions();
+    setHighlighted(-1);
+    navigate(`/work/${id}`);
+  };
   const [syncedKeyword, setSyncedKeyword] = useState(currentKeyword);
   if (currentKeyword !== syncedKeyword) {
     setSyncedKeyword(currentKeyword);
@@ -295,7 +318,9 @@ function Layout({ children }: LayoutProps) {
               ml: { xs: 1, sm: 3 },
               flex: 1,
               maxWidth: 520,
+              position: "relative", // 후보 목록의 기준점
             }}
+            ref={setSearchBoxEl}
           >
             <SearchIcon
               onClick={submitSearch}
@@ -304,13 +329,39 @@ function Layout({ children }: LayoutProps) {
             <InputBase
               placeholder="작품 검색…"
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
+              onChange={(e) => {
+                setKeyword(e.target.value);
+                setSuggestOpen(true);
+                setHighlighted(-1); // 글자가 바뀌면 선택을 푼다
+              }}
+              onFocus={() => setSuggestOpen(true)}
               // Enter로 검색 (IME 조합 중 Enter는 무시 — 한글 입력 확정용 Enter가
               // 검색으로 새지 않게 한다)
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                // ★IME 조합 중 Enter는 무시★ 한글 확정용 Enter가 검색으로 새지 않게 한다.
+                //   (조합 중에는 방향키도 후보 이동이 아니라 글자 선택에 쓰인다)
+                if (e.nativeEvent.isComposing) return;
+
+                if (e.key === "ArrowDown") {
                   e.preventDefault();
-                  submitSearch();
+                  setSuggestOpen(true);
+                  setHighlighted((i) => (i + 1) % Math.max(suggestions.length, 1));
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setHighlighted((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+                } else if (e.key === "Escape") {
+                  setSuggestOpen(false);
+                  setHighlighted(-1);
+                } else if (e.key === "Enter") {
+                  e.preventDefault();
+                  // 후보를 골라둔 상태면 그 작품으로, 아니면 평소대로 검색
+                  if (highlighted >= 0 && suggestions[highlighted]) {
+                    chooseSuggestion(suggestions[highlighted].id);
+                  } else {
+                    setSuggestOpen(false);
+                    clearSuggestions();
+                    submitSearch();
+                  }
                 }
               }}
               inputProps={{ "aria-label": "작품 검색" }}
@@ -337,6 +388,53 @@ function Layout({ children }: LayoutProps) {
                 <CloseIcon sx={{ fontSize: 20 }} />
               </IconButton>
             )}
+
+            {/* 자동완성 후보 — 검색창 바로 아래 */}
+            <Popper
+              open={suggestOpen && suggestions.length > 0}
+              anchorEl={searchBoxEl}
+              placement="bottom-start"
+              // ★AppBar보다 위로★ 헤더가 z-index를 갖고 있어 그냥 두면 목록이 가려진다
+              sx={{ zIndex: (theme) => theme.zIndex.appBar + 1, width: searchBoxEl?.clientWidth }}
+            >
+              <ClickAwayListener onClickAway={() => setSuggestOpen(false)}>
+                <Paper elevation={8} sx={{ mt: 0.5, borderRadius: 2, overflow: "hidden" }}>
+                  <MenuList dense disablePadding>
+                    {suggestions.map((s, i) => (
+                      <MenuItem
+                        key={s.id}
+                        selected={i === highlighted}
+                        onMouseEnter={() => setHighlighted(i)}
+                        onClick={() => chooseSuggestion(s.id)}
+                        sx={{ py: 1, gap: 1.5 }}
+                      >
+                        {/* 썸네일 — 제목만 있으면 시리즈물을 구분하기 어렵다 */}
+                        <Box
+                          sx={{
+                            width: 30, height: 42, flexShrink: 0, borderRadius: 0.5,
+                            bgcolor: "grey.200",
+                            backgroundImage: s.imageUrl ? `url(${s.imageUrl})` : undefined,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }}
+                        />
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                          >
+                            {s.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {s.type === "GAME" ? "게임" : "애니메이션"}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </MenuList>
+                </Paper>
+              </ClickAwayListener>
+            </Popper>
           </Box>
 
           {/* 오른쪽으로 밀어내는 스페이서 */}

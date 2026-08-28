@@ -108,3 +108,83 @@ test.describe('통합검색 — 폴백', () => {
     await expect(page.locator('.MuiCardActionArea-root').first()).toBeVisible();
   });
 });
+
+/**
+ * 자동완성 — 검색창에 앞글자만 쳐도 후보가 뜬다.
+ *
+ * <p>edge_ngram 색인이 있어야 동작한다. ES가 없으면 후보가 안 뜨는 게 정상이므로
+ * (폴백을 일부러 두지 않았다) 그 경우엔 skip 한다.
+ */
+test.describe('자동완성', () => {
+  const SEARCH = '작품 검색…';
+
+  async function type(page: Page, text: string) {
+    const box = page.getByPlaceholder(SEARCH);
+    await box.click();
+    await box.fill(text);
+    await page.waitForTimeout(700); // 디바운스 250ms + 응답
+  }
+
+  test('앞글자만 쳐도 후보가 뜬다 (fri → Frieren)', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await elasticsearchAlive(page)), 'Elasticsearch가 떠 있지 않습니다');
+
+    await type(page, 'fri');
+
+    const titles = await page.locator('li[role="menuitem"]').allInnerTexts();
+    expect(titles.length).toBeGreaterThan(0);
+    expect(titles.every((t) => /frieren/i.test(t))).toBe(true);
+  });
+
+  test('★한 글자에는 반응하지 않는다★ (거의 전부가 뜬다)', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await elasticsearchAlive(page)), 'Elasticsearch가 떠 있지 않습니다');
+
+    await type(page, 'f');
+
+    await expect(page.locator('li[role="menuitem"]')).toHaveCount(0);
+  });
+
+  test('후보를 누르면 그 작품 상세로 간다 (검색 결과를 거치지 않는다)', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await elasticsearchAlive(page)), 'Elasticsearch가 떠 있지 않습니다');
+
+    await type(page, 'elden');
+    await page.locator('li[role="menuitem"]').first().click();
+
+    await expect(page).toHaveURL(/\/work\/\d+$/);
+  });
+
+  test('키보드로 고를 수 있다 (↓ + Enter)', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await elasticsearchAlive(page)), 'Elasticsearch가 떠 있지 않습니다');
+
+    await type(page, 'zelda');
+    await page.getByPlaceholder(SEARCH).press('ArrowDown');
+    await page.getByPlaceholder(SEARCH).press('Enter');
+
+    await expect(page).toHaveURL(/\/work\/\d+$/);
+  });
+
+  test('Esc를 누르면 후보가 닫힌다', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await elasticsearchAlive(page)), 'Elasticsearch가 떠 있지 않습니다');
+
+    await type(page, 'fri');
+    await expect(page.locator('li[role="menuitem"]').first()).toBeVisible();
+
+    await page.getByPlaceholder(SEARCH).press('Escape');
+    await expect(page.locator('li[role="menuitem"]')).toHaveCount(0);
+  });
+
+  test('후보를 고르지 않고 Enter를 치면 평소대로 검색된다', async ({ page }) => {
+    await page.goto('/');
+
+    const box = page.getByPlaceholder(SEARCH);
+    await box.click();
+    await box.fill('frieren');
+    await box.press('Enter');
+
+    await expect(page).toHaveURL(/\/\?q=frieren$/);
+  });
+});

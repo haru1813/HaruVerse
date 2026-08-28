@@ -2,6 +2,7 @@ package com.haru.haruverse.work.service;
 
 import com.haru.haruverse.global.response.PageResponse;
 import com.haru.haruverse.search.document.WorkDocument;
+import com.haru.haruverse.search.dto.SuggestionResponse;
 import com.haru.haruverse.search.service.WorkSearchService;
 import com.haru.haruverse.work.dto.WorkDetailResponse;
 import com.haru.haruverse.work.dto.WorkResponse;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -77,6 +79,20 @@ public class WorkService {
         if (pageable.getSort().isSorted()) return pageable;
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "releaseDate"));
+    }
+
+    /**
+     * 자동완성 후보 — 검색창이 타이핑마다 부른다.
+     *
+     * <p>DB 폴백이 없다. LIKE 로 흉내 내면 앞뒤 %% 때문에 느리고, 결과 순서도 달라서
+     * 어떤 날은 후보가 뜨고 어떤 날은 다른 게 뜨는 화면이 된다.
+     * 자동완성은 <b>없으면 안 뜨면 되는</b> 기능이라 조용히 빈 목록을 준다.
+     */
+    @Transactional(readOnly = true)
+    public List<SuggestionResponse> suggest(String prefix, int size) {
+        return searchService.suggest(prefix, size).stream()
+                .map(SuggestionResponse::from)
+                .toList();
     }
 
     /** 작품 단건. 없으면 404로 이어질 예외를 던진다. */

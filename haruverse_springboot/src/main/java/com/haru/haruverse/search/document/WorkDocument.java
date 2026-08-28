@@ -7,6 +7,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.InnerField;
+import org.springframework.data.elasticsearch.annotations.MultiField;
 import org.springframework.data.elasticsearch.annotations.Setting;
 
 import java.util.ArrayList;
@@ -40,10 +42,19 @@ public class WorkDocument {
     /**
      * 원제(대개 영문). 검색의 주 대상.
      *
-     * <p>{@code text} 로 분석해 부분 일치·오타 교정이 되게 하고,
-     * 하위 필드 {@code keyword} 로 정확 일치·정렬도 함께 쓸 수 있게 둔다.
+     * <p>하위 필드 {@code title.auto} 는 자동완성용이다.
+     *
+     * <p><b>★색인 분석기와 검색 분석기를 반드시 다르게 둔다★</b>
+     * edge_ngram 은 색인할 때 "Frieren" 을 fr·fri·frie… 로 잘라 넣는다.
+     * 그런데 <b>검색어에도 같은 분석기를 쓰면</b> "fri" 가 다시 fr·fri 로 잘려서,
+     * 문서의 "fr" 조각과도 맞아버린다 → 두 글자만 같으면 전부 걸리는 검색이 된다.
+     * 검색 쪽은 자르지 않고 통째로 비교해야 한다("fri" 는 "fri" 조각하고만 맞는다).
      */
-    @Field(type = FieldType.Text, analyzer = "work_analyzer")
+    @MultiField(
+            mainField = @Field(type = FieldType.Text, analyzer = "work_analyzer"),
+            otherFields = @InnerField(suffix = "auto", type = FieldType.Text,
+                    analyzer = "autocomplete_index", searchAnalyzer = "autocomplete_search")
+    )
     private String title;
 
     /**
@@ -54,7 +65,11 @@ public class WorkDocument {
      * 나중에 한글 제목을 주는 출처(TMDB 등)를 붙이면 이 필드만 채우면 되도록 <b>미리 열어둔다.</b>
      * 그때 매핑을 다시 만들지 않아도 되고, 색인 구조도 그대로다.
      */
-    @Field(type = FieldType.Text, analyzer = "work_analyzer")
+    @MultiField(
+            mainField = @Field(type = FieldType.Text, analyzer = "work_analyzer"),
+            otherFields = @InnerField(suffix = "auto", type = FieldType.Text,
+                    analyzer = "autocomplete_index", searchAnalyzer = "autocomplete_search")
+    )
     private String titleKo;
 
     /** 별칭·다른 표기 — 위와 같은 이유로 미리 열어둔다 (약칭·시리즈명 등) */

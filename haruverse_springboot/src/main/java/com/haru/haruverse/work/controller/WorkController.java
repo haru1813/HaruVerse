@@ -2,6 +2,7 @@ package com.haru.haruverse.work.controller;
 
 import com.haru.haruverse.global.response.PageResponse;
 import com.haru.haruverse.work.dto.WorkDetailResponse;
+import com.haru.haruverse.search.dto.SuggestionResponse;
 import com.haru.haruverse.work.dto.WorkResponse;
 import com.haru.haruverse.work.entity.WorkType;
 import com.haru.haruverse.work.service.WorkService;
@@ -10,6 +11,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 작품 API — 설계문서 ④ 3장(work).
@@ -49,6 +52,22 @@ public class WorkController {
             @PageableDefault(size = 20) Pageable pageable
     ) {
         return ResponseEntity.ok(workService.getWorks(type, season, genre, keyword, studio, pageable));
+    }
+
+    /**
+     * 자동완성 — GET /api/works/suggest?q=fri
+     *
+     * <p>★이 매핑이 {@code /{id}} 보다 <b>위에</b> 있어야 한다★
+     * 아래에 두면 스프링이 "suggest" 를 id 로 해석하려다 400이 난다.
+     * (구체적인 경로가 변수 경로보다 먼저 와야 한다)
+     *
+     * <p>비로그인도 쓴다 — {@code GET /api/works/**} 는 permitAll 이다.
+     */
+    @GetMapping("/suggest")
+    public ResponseEntity<List<SuggestionResponse>> suggest(
+            @RequestParam(name = "q") String keyword,
+            @RequestParam(defaultValue = "8") int size) {
+        return ResponseEntity.ok(workService.suggest(keyword, size));
     }
 
     /** 작품 상세 — GET /api/works/{id}. 없으면 404. */

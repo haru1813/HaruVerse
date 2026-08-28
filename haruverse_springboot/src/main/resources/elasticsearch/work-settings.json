@@ -1,13 +1,19 @@
 {
   "index": {
     "number_of_shards": 1,
-    "number_of_replicas": 0
+    "number_of_replicas": 0,
+    "max_ngram_diff": 20
   },
   "analysis": {
     "filter": {
       "possessive": {
         "type": "stemmer",
         "language": "possessive_english"
+      },
+      "autocomplete_edge": {
+        "type": "edge_ngram",
+        "min_gram": 2,
+        "max_gram": 20
       }
     },
     "analyzer": {
@@ -15,6 +21,16 @@
         "type": "custom",
         "tokenizer": "standard",
         "filter": ["lowercase", "asciifolding", "possessive"]
+      },
+      "autocomplete_index": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding", "autocomplete_edge"]
+      },
+      "autocomplete_search": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding"]
       }
     }
   }

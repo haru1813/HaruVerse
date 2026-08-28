@@ -40,3 +40,29 @@ export function fetchWorks(query: WorkQuery = {}): Promise<PageResponse<Work>> {
 export function fetchWork(id: number): Promise<WorkDetail> {
   return apiFetch<WorkDetail>(`/api/works/${id}`);
 }
+
+/** 자동완성 후보 — 검색창에 뜨는 최소 정보 */
+export type Suggestion = {
+  id: number;
+  title: string;
+  type: WorkType;
+  imageUrl: string | null;
+};
+
+/**
+ * 자동완성 — GET /api/works/suggest
+ *
+ * ★실패해도 예외를 던지지 않는다★
+ * 검색창은 타이핑마다 이걸 부른다. 여기서 예외가 나면 입력 중에 화면이 깨진다.
+ * 자동완성은 없으면 그냥 안 뜨면 되는 기능이라 빈 배열로 조용히 넘어간다.
+ */
+export async function fetchSuggestions(keyword: string, size = 8): Promise<Suggestion[]> {
+  if (!keyword.trim()) return [];
+  try {
+    return await apiFetch<Suggestion[]>(
+      `/api/works/suggest?q=${encodeURIComponent(keyword.trim())}&size=${size}`,
+    );
+  } catch {
+    return [];
+  }
+}

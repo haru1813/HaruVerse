@@ -8,7 +8,7 @@
 
 ```
 Spring Boot 3.4 / Java 21 · React 19 / TypeScript · MariaDB 11 · Docker Compose
-백엔드 테스트 134 (JUnit) · E2E 139 (Playwright)
+백엔드 테스트 139 (JUnit) · E2E 152 (Playwright)
 ```
 
 ---
@@ -136,6 +136,7 @@ docker compose up -d --build
 | 프론트 | http://localhost:303 |
 | 백엔드 | http://localhost:304/api/works |
 | MariaDB | localhost:305 |
+| Elasticsearch | http://localhost:306 |
 
 게임 수집 API를 쓰려면 [RAWG 키](https://rawg.io/apidocs)가 필요합니다. **키는 소스에 두지 않습니다.**
 
@@ -159,8 +160,8 @@ cd haruverse_react && npm install && npm run dev # :5173
 ### 테스트
 
 ```bash
-cd haruverse_springboot && ./gradlew test        # 134
-cd haruverse_react && npx playwright test        # 139
+cd haruverse_springboot && ./gradlew test        # 139
+cd haruverse_react && npx playwright test        # 152
 ```
 
 ---
@@ -214,9 +215,6 @@ docs/                    설계 문서 (기획 · 패키지 구조 · API 명세
 
 숨기는 것보다 적어두는 편이 낫다고 생각해서 남깁니다.
 
-- **Elasticsearch 통합검색** — 원래 계획한 핵심 기능인데 아직입니다.
-  지금 검색은 `LIKE '%키워드%'` 라 ① 앞뒤 `%` 때문에 인덱스를 못 타고 ② 한 글자만 틀려도 0건이며
-  ③ 관련도 순 정렬도, 자동완성도, 여러 필드 동시 검색도 없습니다.
 - **한글 검색** — 위와 별개의 **데이터 문제**입니다. Jikan·RAWG 가 주는 제목이 전부 영문이라
   (`Frieren: Beyond Journey's End`) 저장된 한글 제목이 **한 건도 없습니다.**
   검색 엔진을 바꿔도 해결되지 않고, 한글 제목·별칭을 주는 출처를 따로 붙여야 합니다.

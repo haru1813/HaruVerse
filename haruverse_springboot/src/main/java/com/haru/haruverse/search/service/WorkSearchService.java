@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -116,6 +117,47 @@ public class WorkSearchService {
                         COOLDOWN_MS / 1000, e.toString());
             }
             return null; // 폴백 신호
+        }
+    }
+
+    /**
+     * 자동완성 — 앞글자만 쳐도 후보가 뜬다.
+     *
+     * <p><b>왜 일반 검색을 그대로 쓰지 않는가</b>
+     * 일반 검색은 <b>단어 단위</b>로 맞춘다. "fri" 는 "Frieren" 과 다른 단어라 안 걸린다.
+     * 자동완성은 <b>단어 도중</b>에도 맞아야 하므로, 색인할 때 앞글자 조각을
+     * 미리 만들어 두는 edge_ngram 필드({@code title.auto})를 따로 쓴다.
+     *
+     * <p><b>오타 교정을 켜지 않는 이유</b>
+     * 타이핑 중에는 아직 안 친 글자가 오타처럼 보인다. fuzziness 를 켜면
+     * 두 글자만 쳐도 엉뚱한 후보가 잔뜩 올라온다. 자동완성은 <b>정확한 앞글자</b>만 본다.
+     *
+     * @return 후보 목록. ES에 못 붙었으면 <b>빈 목록</b>
+     *         (검색과 달리 폴백이 없다 — LIKE 로 흉내 내면 느리고 결과도 다르다.
+     *          자동완성은 없으면 그냥 안 뜨면 되는 기능이라 조용히 비운다)
+     */
+    public List<WorkDocument> suggest(String prefix, int size) {
+        if (!enabled) return List.of();
+        if (System.currentTimeMillis() < skipUntil.get()) return List.of();
+        if (prefix == null || prefix.isBlank()) return List.of();
+
+        try {
+            NativeQuery query = NativeQuery.builder()
+                    .withQuery(q -> q.multiMatch(m -> m
+                            .query(prefix)
+                            .fields("title.auto^3", "titleKo.auto^3")
+                            // 친 글자가 전부 맞아야 한다. 하나만 맞아도 뜨면 목록이 지저분해진다.
+                            .operator(co.elastic.clients.elasticsearch._types.query_dsl.Operator.And)))
+                    .withPageable(PageRequest.of(0, Math.min(Math.max(size, 1), 20)))
+                    .build();
+
+            return operations.search(query, WorkDocument.class).getSearchHits().stream()
+                    .map(hit -> hit.getContent())
+                    .toList();
+
+        } catch (Exception e) {
+            log.warn("자동완성 실패: {}", e.toString());
+            return List.of();
         }
     }
 
