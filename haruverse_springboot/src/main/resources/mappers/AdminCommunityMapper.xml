@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.haru.haruverse.admin.mapper.AdminCommunityMapper">
+
+    <!-- 게시글 검색 조건 — 목록과 카운트가 함께 쓴다 -->
+    <sql id="postCondition">
+        <if test="keyword != null and keyword != ''">
+            WHERE LOWER(p.title)    LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+               OR LOWER(p.content)  LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+               OR LOWER(m.nickname) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+        </if>
+    </sql>
+
+    <!--
+      ★본문은 120자만 잘라 담는다★
+        본문이 10,000자까지 들어가므로 목록에 통째로 실으면 응답이 수 MB 가 된다.
+        운영자가 스팸인지 판단할 만큼만 보낸다.
+    -->
+    <select id="findPosts" resultType="com.haru.haruverse.admin.dto.AdminPostResponse">
+        SELECT
+            p.id,
+            p.title,
+            SUBSTRING(p.content, 1, 120) AS excerpt,
+            m.nickname                   AS author_nickname,
+            m.id                         AS author_id,
+            w.title                      AS work_title,
+            w.id                         AS work_id,
+            p.view_count,
+            (SELECT COUNT(*) FROM comment c WHERE c.post_id = p.id) AS comment_count,
+            p.created_at
+        FROM post p
+        JOIN member m ON m.id = p.member_id
+        JOIN work   w ON w.id = p.work_id
+        <include refid="postCondition"/>
+        ORDER BY p.created_at DESC, p.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countPosts" resultType="long">
+        SELECT COUNT(*)
+        FROM post p
+        JOIN member m ON m.id = p.member_id
+        <include refid="postCondition"/>
+    </select>
+
+    <!-- 댓글 검색 조건 -->
+    <sql id="commentCondition">
+        <if test="keyword != null and keyword != ''">
+            WHERE LOWER(c.content)  LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+               OR LOWER(m.nickname) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+        </if>
+    </sql>
+
+    <!--
+      원글 제목을 함께 담는다 — 맥락 없이 댓글만 보면 지울지 판단할 수 없다.
+      parent_id 는 답글 여부를 알려준다(최상위를 지우면 답글도 함께 사라진다).
+    -->
+    <select id="findComments" resultType="com.haru.haruverse.admin.dto.AdminCommentResponse">
+        SELECT
+            c.id,
+            c.content,
+            m.nickname AS author_nickname,
+            m.id       AS author_id,
+            p.id       AS post_id,
+            p.title    AS post_title,
+            c.parent_id,
+            c.created_at
+        FROM comment c
+        JOIN member m ON m.id = c.member_id
+        JOIN post   p ON p.id = c.post_id
+        <include refid="commentCondition"/>
+        ORDER BY c.created_at DESC, c.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countComments" resultType="long">
+        SELECT COUNT(*)
+        FROM comment c
+        JOIN member m ON m.id = c.member_id
+        <include refid="commentCondition"/>
+    </select>
+
+</mapper>

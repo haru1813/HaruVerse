@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.haru.haruverse.community.mapper.PostSearchMapper">
+
+    <!--
+      ★조건은 여기 한 곳에만 있다★
+        목록 쿼리와 카운트 쿼리가 이 조각을 함께 쓴다.
+        JPQL 시절에는 같은 where 절을 두 쿼리에 그대로 복사해 두었는데,
+        한쪽만 고치면 목록과 총 건수가 어긋난다(화면엔 3건인데 결과는 5개).
+
+      ★검색어가 없으면 where 절 자체가 없다★
+        JPQL 에서는 ":keyword is null or ..." 를 항상 평가해야 했다.
+    -->
+    <sql id="searchCondition">
+        <if test="keyword != null and keyword != ''">
+            WHERE LOWER(p.title)   LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+               OR LOWER(p.content) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+               OR LOWER(m.nickname) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+               OR LOWER(w.title)   LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+        </if>
+    </sql>
+
+    <!--
+      ★댓글·추천 수는 스칼라 서브쿼리로 센다★
+        left join + group by 로도 되지만, 그러면 집계 대상이 늘 때마다
+        group by 목록에 컬럼을 계속 더해야 한다(JPQL 버전이 그랬다).
+        서브쿼리는 세는 대상이 늘어도 줄 하나만 추가하면 된다.
+    -->
+    <select id="findRecent" resultType="com.haru.haruverse.community.dto.RecentPostResponse">
+        SELECT
+            p.id,
+            w.id          AS work_id,
+            w.title       AS work_title,
+            p.title,
+            m.nickname    AS author_nickname,
+            p.view_count,
+            (SELECT COUNT(*) FROM comment   c WHERE c.post_id = p.id) AS comment_count,
+            (SELECT COUNT(*) FROM post_like l WHERE l.post_id = p.id) AS like_count,
+            p.created_at
+        FROM post p
+        JOIN member m ON m.id = p.member_id
+        JOIN work   w ON w.id = p.work_id
+        <include refid="searchCondition"/>
+        ORDER BY p.created_at DESC, p.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countRecent" resultType="long">
+        SELECT COUNT(*)
+        FROM post p
+        JOIN member m ON m.id = p.member_id
+        JOIN work   w ON w.id = p.work_id
+        <include refid="searchCondition"/>
+    </select>
+
+</mapper>

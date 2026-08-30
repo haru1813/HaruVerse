@@ -7,6 +7,7 @@ import com.haru.haruverse.community.entity.PostLike;
 import com.haru.haruverse.community.repository.CommentRepository;
 import com.haru.haruverse.community.repository.PostLikeRepository;
 import com.haru.haruverse.community.mapper.ChannelMapper;
+import com.haru.haruverse.community.mapper.PostSearchMapper;
 import com.haru.haruverse.community.repository.PostRepository;
 import com.haru.haruverse.global.exception.ForbiddenException;
 import com.haru.haruverse.global.response.PageResponse;
@@ -39,6 +40,7 @@ public class PostService {
     private final WorkRepository workRepository;
     private final PostImageService postImageService;
     private final ChannelMapper channelMapper;
+    private final PostSearchMapper postSearchMapper;
 
     public PostService(PostRepository postRepository,
                        CommentRepository commentRepository,
@@ -46,7 +48,8 @@ public class PostService {
                        MemberRepository memberRepository,
                        WorkRepository workRepository,
                        PostImageService postImageService,
-                       ChannelMapper channelMapper) {
+                       ChannelMapper channelMapper,
+                       PostSearchMapper postSearchMapper) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.postLikeRepository = postLikeRepository;
@@ -54,6 +57,7 @@ public class PostService {
         this.workRepository = workRepository;
         this.postImageService = postImageService;
         this.channelMapper = channelMapper;
+        this.postSearchMapper = postSearchMapper;
     }
 
     /* ── 글 ───────────────────────────────────────────── */
@@ -93,15 +97,27 @@ public class PostService {
     }
 
     /**
-     * 전체 게시판의 최근 글 — 커뮤니티 첫 화면. 검색어가 있으면 제목·본문·작성자·작품명에서 찾는다.
+     * 전체 게시판의 최근 글 — 검색어가 있으면 제목·본문·작성자·작품명에서 찾는다.
+     *
+     * <p><b>★여기도 MyBatis 다★</b>
+     * JPQL 로는 목록과 총 건수에 <b>같은 where 절을 두 번</b> 써야 했다.
+     * 조건이 넷이라 한 줄을 고치려면 여덟 줄을 맞춰야 했고,
+     * 한쪽만 고치면 목록과 건수가 어긋난다.
+     * MyBatis 는 {@code <sql>} 조각을 두 쿼리가 함께 쓴다 — 조건은 한 곳에만 있다.
      *
      * @param keyword null 이거나 공백이면 전체 목록
      */
     @Transactional(readOnly = true)
     public PageResponse<RecentPostResponse> getRecentPosts(String keyword, Pageable pageable) {
-        // 빈 문자열과 null 을 하나로 맞춘다 — 쿼리에서 둘 다 검사하지 않도록
+        // 빈 문자열과 null 을 하나로 맞춘다 — 매퍼의 <if> 가 둘 다 검사하지 않도록
         String q = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
-        return PageResponse.of(postRepository.findRecentSummaries(q, pageable), r -> r);
+
+        long total = postSearchMapper.countRecent(q);
+        List<RecentPostResponse> content = total == 0
+                ? List.of()
+                : postSearchMapper.findRecent(q, pageable.getPageSize(), (int) pageable.getOffset());
+
+        return PageResponse.of(new PageImpl<>(content, pageable, total), r -> r);
     }
 
     /**

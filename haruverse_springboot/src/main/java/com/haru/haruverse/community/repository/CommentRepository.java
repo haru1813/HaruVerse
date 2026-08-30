@@ -69,28 +69,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     /** 답글 수 — 삭제 확인 문구에 쓴다 */
     long countByParentId(Long parentId);
 
-    /**
-     * 관리자 댓글 목록 — 내용·작성자 닉네임에서 검색한다.
-     *
-     * <p>원글 제목을 함께 담는다. 맥락 없이 댓글만 보면 지울지 판단할 수 없다.
-     */
-    @Query(value = """
-            select new com.haru.haruverse.admin.dto.AdminCommentResponse(
-                       c.id, c.content, m.nickname, m.id, p.id, p.title,
-                       c.parent.id, c.createdAt)
-            from Comment c
-            join c.member m
-            join c.post p
-            where (:keyword is null or :keyword = ''
-                   or lower(c.content) like lower(concat('%', :keyword, '%'))
-                   or lower(m.nickname) like lower(concat('%', :keyword, '%')))
-            order by c.createdAt desc
-            """,
-            countQuery = """
-            select count(c) from Comment c join c.member m
-            where (:keyword is null or :keyword = ''
-                   or lower(c.content) like lower(concat('%', :keyword, '%'))
-                   or lower(m.nickname) like lower(concat('%', :keyword, '%')))
-            """)
-    Page<AdminCommentResponse> findForAdmin(@Param("keyword") String keyword, Pageable pageable);
+    // 관리자 목록은 MyBatis 로 옮겼다(AdminCommunityMapper) — where 절 중복 제거.
+
 }

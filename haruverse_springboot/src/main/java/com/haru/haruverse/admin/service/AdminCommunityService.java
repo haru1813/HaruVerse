@@ -3,16 +3,19 @@ package com.haru.haruverse.admin.service;
 import com.haru.haruverse.admin.dto.AdminCommentResponse;
 import com.haru.haruverse.admin.dto.AdminPostResponse;
 import com.haru.haruverse.admin.entity.AuditAction;
+import com.haru.haruverse.admin.mapper.AdminCommunityMapper;
 import com.haru.haruverse.community.entity.Comment;
 import com.haru.haruverse.community.entity.Post;
 import com.haru.haruverse.community.repository.CommentRepository;
 import com.haru.haruverse.community.repository.PostRepository;
 import com.haru.haruverse.community.service.PostService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -31,25 +34,48 @@ public class AdminCommunityService {
     private final CommentRepository commentRepository;
     private final PostService postService;
     private final AuditService auditService;
+    private final AdminCommunityMapper communityMapper;
 
     public AdminCommunityService(PostRepository postRepository,
                                  CommentRepository commentRepository,
                                  PostService postService,
-                                 AuditService auditService) {
+                                 AuditService auditService,
+                                 AdminCommunityMapper communityMapper) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.postService = postService;
         this.auditService = auditService;
+        this.communityMapper = communityMapper;
     }
 
+    /**
+     * 게시글 목록 — MyBatis.
+     *
+     * <p>JPQL 로는 같은 where 절을 목록과 countQuery 에 두 번 써야 했다.
+     * 한쪽만 고치면 목록과 총 건수가 어긋난다.
+     */
     @Transactional(readOnly = true)
     public Page<AdminPostResponse> listPosts(String keyword, Pageable pageable) {
-        return postRepository.findForAdmin(normalize(keyword), pageable);
+        String q = normalize(keyword);
+        long total = communityMapper.countPosts(q);
+
+        List<AdminPostResponse> content = total == 0
+                ? List.of()
+                : communityMapper.findPosts(q, pageable.getPageSize(), (int) pageable.getOffset());
+
+        return new PageImpl<>(content, pageable, total);
     }
 
     @Transactional(readOnly = true)
     public Page<AdminCommentResponse> listComments(String keyword, Pageable pageable) {
-        return commentRepository.findForAdmin(normalize(keyword), pageable);
+        String q = normalize(keyword);
+        long total = communityMapper.countComments(q);
+
+        List<AdminCommentResponse> content = total == 0
+                ? List.of()
+                : communityMapper.findComments(q, pageable.getPageSize(), (int) pageable.getOffset());
+
+        return new PageImpl<>(content, pageable, total);
     }
 
     /**
