@@ -8,15 +8,16 @@ import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbUpOutlinedIcon from "@mui/icons-material/ThumbUpOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import EditIcon from "@mui/icons-material/Edit";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "../../layouts/Layout";
 import { useAuth } from "../../contexts/AuthContext";
 import { UnauthorizedError } from "../../lib/api";
 import {
-  createComment, deleteComment, deletePost, fetchComments, fetchPost,
-  formatPostDate, likePost, unlikePost,
+  createComment, deleteComment, deleteImage, deletePost, fetchComments,
+  fetchImages, fetchPost, formatPostDate, likePost, unlikePost, uploadImage,
 } from "./api";
-import type { Comment, PostDetail } from "./api";
+import type { Comment, PostDetail, PostImage } from "./api";
 import PostSidebar from "./PostSidebar";
 
 /** 글 상세 — /post/:id */
@@ -34,6 +35,10 @@ function PostDetailPage() {
   // 답글은 한 번에 하나만 연다 — 여러 입력창이 동시에 열리면 어디에 쓰는지 헷갈린다
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
+
+  // ── 첨부 이미지 ──
+  const [images, setImages] = useState<PostImage[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,10 +47,11 @@ function PostDetailPage() {
     if (invalidId) return;
     let alive = true;
 
-    Promise.all([fetchPost(postId), fetchComments(postId)])
-      .then(([p, c]) => {
+    Promise.all([fetchPost(postId), fetchComments(postId), fetchImages(postId)])
+      .then(([p, c, imgs]) => {
         if (!alive) return;
         setPost(p);
+        setImages(imgs);
         setComments(c);
       })
       .catch((e) => {
@@ -140,6 +146,34 @@ function PostDetailPage() {
     }
   };
 
+  const pickImage = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      await uploadImage(postId, file);
+      // 서버 기준으로 다시 읽는다 — 장수 제한에 걸리면 목록이 그대로다
+      setImages(await fetchImages(postId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "이미지를 올리지 못했습니다.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = async (imageId: number) => {
+    if (!window.confirm("이 이미지를 지울까요?")) return;
+    setUploading(true);
+    try {
+      await deleteImage(imageId);
+      setImages(await fetchImages(postId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "이미지를 지우지 못했습니다.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   /** 답글까지 센 전체 댓글 수 — 헤더에 쓴다 */
   const totalComments = comments.reduce((n, c) => n + 1 + c.replies.length, 0);
 
@@ -218,6 +252,78 @@ function PostDetailPage() {
               <Typography sx={{ color: "text.primary", lineHeight: 1.9, whiteSpace: "pre-wrap" }}>
                 {post.content}
               </Typography>
+
+              {/* ── 첨부 이미지 ──
+                  본문 안에 끼워 넣지 않고 아래에 나열한다. 본문이 순수 텍스트라
+                  이미지를 본문에 넣으려면 마크다운·HTML 렌더링이 필요하고,
+                  그러면 XSS 방어까지 딸려온다. */}
+              {images.length > 0 && (
+                <Stack spacing={1.5} sx={{ mt: 3 }}>
+                  {images.map((img) => (
+                    <Box key={img.id} sx={{ position: "relative" }}>
+                      <Box
+                        component="img"
+                        src={img.url}
+                        alt={img.originalName}
+                        loading="lazy"
+                        sx={{
+                          width: "100%",
+                          maxHeight: 620,
+                          objectFit: "contain",
+                          borderRadius: 2,
+                          border: "1px solid #e5eaf2",
+                          bgcolor: "#fafbfd",
+                          display: "block",
+                        }}
+                      />
+                      {post.mine && (
+                        <IconButton
+                          size="small"
+                          onClick={() => removeImage(img.id)}
+                          disabled={uploading}
+                          aria-label="이미지 삭제"
+                          sx={{
+                            position: "absolute", top: 8, right: 8,
+                            bgcolor: "rgba(15,26,46,0.72)", color: "#fff",
+                            "&:hover": { bgcolor: "rgba(15,26,46,0.88)" },
+                          }}
+                        >
+                          <DeleteOutlineIcon sx={{ fontSize: 17 }} />
+                        </IconButton>
+                      )}
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+
+              {/* 업로드 — 글쓴이에게만 보인다 (서버도 글쓴이만 허용한다) */}
+              {post.mine && (
+                <Box sx={{ mt: 2 }}>
+                  <Button
+                    component="label"
+                    size="small"
+                    variant="outlined"
+                    disabled={uploading}
+                    startIcon={<ImageOutlinedIcon />}
+                    sx={{ borderColor: "#cfd8e3", color: "#475569" }}
+                  >
+                    {uploading ? "올리는 중…" : "이미지 첨부"}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={(e) => {
+                        pickImage(e.target.files?.[0]);
+                        // 같은 파일을 다시 고를 수 있게 값을 비운다
+                        e.target.value = "";
+                      }}
+                    />
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 1.5 }}>
+                    JPG · PNG · GIF · WebP · 5MB 이하 · 최대 5장
+                  </Typography>
+                </Box>
+              )}
 
               <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
                 <Button

@@ -169,6 +169,38 @@ export function deleteComment(commentId: number): Promise<void> {
   return apiFetch<void>(`/api/comments/${commentId}`, { method: "DELETE" });
 }
 
+/* ── 첨부 이미지 ────────────────────────────────────── */
+
+export type PostImage = {
+  id: number;
+  /** 그대로 img src 에 넣는 주소 */
+  url: string;
+  originalName: string;
+  byteSize: number;
+};
+
+export function fetchImages(postId: number): Promise<PostImage[]> {
+  return apiFetch<PostImage[]>(`/api/posts/${postId}/images`);
+}
+
+/**
+ * 이미지 첨부 — 글쓴이만.
+ *
+ * FormData 를 넘기면 apiFetch 가 Content-Type 을 붙이지 않는다(boundary 때문).
+ */
+export function uploadImage(postId: number, file: File): Promise<PostImage> {
+  const form = new FormData();
+  form.append("file", file);
+  return apiFetch<PostImage>(`/api/posts/${postId}/images`, {
+    method: "POST",
+    body: form,
+  });
+}
+
+export function deleteImage(imageId: number): Promise<void> {
+  return apiFetch<void>(`/api/images/${imageId}`, { method: "DELETE" });
+}
+
 /* ── 추천 ───────────────────────────────────────────── */
 
 /** 추천 — 찜과 같은 이유로 PUT (몇 번을 보내도 결과가 같다) */

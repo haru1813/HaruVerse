@@ -55,6 +55,9 @@ public class SecurityConfig {
                     // 커뮤니티 — 글·댓글 '읽기'는 비로그인도 가능.
                     // 쓰기(POST/PUT/DELETE)는 아래 anyRequest().authenticated()에 걸린다.
                     .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
+                    // 첨부 이미지 — 글이 공개이므로 이미지도 비로그인이 볼 수 있어야 한다.
+                    // ★GET 만 연다★ 업로드·삭제는 아래 authenticated() 에 걸린다.
+                    .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
                     // ★수집 API는 관리자만★
                     //   /api/collect/** 는 Jikan·RAWG를 대신 호출한다. 로그인만 하면

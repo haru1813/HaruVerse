@@ -1,4 +1,12 @@
 spring:
+  servlet:
+    multipart:
+      # ★두 값을 함께 둔다★
+      #   max-file-size 는 파일 하나, max-request-size 는 요청 전체다.
+      #   하나만 올리면 여러 장을 한 번에 보낼 때 엉뚱한 데서 막힌다.
+      max-file-size: 5MB
+      max-request-size: 30MB
+
   # MariaDB — 컨테이너로 띄운 인스턴스를 로컬·컨테이너 백엔드가 함께 쓴다.
   #
   # ★H2에서 갈아탄 이유★
@@ -105,3 +113,14 @@ external:
     read-timeout-ms: 10000
     # ★키는 소스에 두지 않는다★ — 환경변수 RAWG_API_KEY로 주입 (없으면 빈 값)
     api-key: ${RAWG_API_KEY:}
+
+# ─────────────────────────────────────────────────────────────
+# 게시글 첨부 이미지
+# ─────────────────────────────────────────────────────────────
+upload:
+  # ★컨테이너 안에서는 볼륨이 마운트된 자리★
+  #   compose 가 /app/uploads 에 named volume 을 붙인다.
+  #   볼륨이 아니면 컨테이너를 다시 만들 때 올린 이미지가 전부 사라진다.
+  image-dir: ${UPLOAD_IMAGE_DIR:./data/uploads/images}
+  # 글 한 편에 붙일 수 있는 장수 — 목록 화면이 무너지지 않을 만큼만
+  max-images-per-post: 5

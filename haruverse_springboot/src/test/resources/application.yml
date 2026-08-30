@@ -70,3 +70,12 @@ external:
 search:
   elasticsearch:
     enabled: false
+
+# ★테스트도 업로드 경로가 필요하다★
+#   @Value("${upload.image-dir}") 가 풀리지 않으면 ApplicationContext 자체가 뜨지 않는다.
+#   (외부 API 키를 여기 둔 것과 같은 이유다)
+#   build 아래에 두어 gradle clean 으로 함께 지워지게 한다 — 테스트가 남긴 파일이
+#   소스 트리를 더럽히지 않는다.
+upload:
+  image-dir: ./build/test-uploads/images
+  max-images-per-post: 5

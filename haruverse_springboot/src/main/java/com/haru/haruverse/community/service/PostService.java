@@ -35,17 +35,20 @@ public class PostService {
     private final PostLikeRepository postLikeRepository;
     private final MemberRepository memberRepository;
     private final WorkRepository workRepository;
+    private final PostImageService postImageService;
 
     public PostService(PostRepository postRepository,
                        CommentRepository commentRepository,
                        PostLikeRepository postLikeRepository,
                        MemberRepository memberRepository,
-                       WorkRepository workRepository) {
+                       WorkRepository workRepository,
+                       PostImageService postImageService) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.postLikeRepository = postLikeRepository;
         this.memberRepository = memberRepository;
         this.workRepository = workRepository;
+        this.postImageService = postImageService;
     }
 
     /* ── 글 ───────────────────────────────────────────── */
@@ -195,6 +198,8 @@ public class PostService {
         commentRepository.deleteRepliesByPostId(post.getId());
         commentRepository.deleteByPostId(post.getId());
         postLikeRepository.deleteByPostId(post.getId());
+        // 첨부 이미지 — DB 행과 디스크 파일을 함께 정리한다
+        postImageService.detachAll(post.getId());
         postRepository.delete(post);
     }
 

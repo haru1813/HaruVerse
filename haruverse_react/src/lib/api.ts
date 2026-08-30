@@ -22,10 +22,17 @@ export class UnauthorizedError extends Error {
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken();
 
+  // ★FormData 일 때는 Content-Type 을 직접 지정하면 안 된다★
+  //   multipart 는 본문을 나누는 boundary 문자열이 헤더에 들어가야 하는데,
+  //   그 값은 브라우저가 만든다. 여기서 "multipart/form-data" 를 박아 넣거나
+  //   기본값인 application/json 을 그대로 두면 boundary 가 빠져
+  //   서버가 본문을 파싱하지 못한다(400).
+  const isFormData = init.body instanceof FormData;
+
   const res = await fetch(path, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
