@@ -28,5 +28,7 @@ FROM nginx:alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# nginx.conf 가 location 마다 include 하는 공통 헤더
+COPY security-headers.conf /etc/nginx/security-headers.conf
 
 EXPOSE 80
