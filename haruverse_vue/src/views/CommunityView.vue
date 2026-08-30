@@ -28,6 +28,8 @@ type CommentRow = {
   authorNickname: string;
   postId: number;
   postTitle: string;
+  /** 답글이면 부모 댓글 id — 최상위면 null */
+  parentId: number | null;
   createdAt: string;
 };
 
@@ -111,13 +113,17 @@ async function removePost(row: PostRow) {
 
 async function removeComment(row: CommentRow) {
   const preview = row.content.length > 40 ? row.content.slice(0, 40) + "…" : row.content;
+  const kind = row.parentId ? "답글" : "댓글";
+  // 최상위 댓글을 지우면 딸린 답글도 함께 사라진다 — 그 사실을 미리 알린다
+  const extra = row.parentId ? "" : "\n이 댓글에 달린 답글도 함께 삭제됩니다.";
+
   const ok = window.confirm(
-    `다음 댓글을 삭제합니다. 되돌릴 수 없습니다.\n\n` +
-      `내용: ${preview}\n작성자: ${row.authorNickname}\n원글: ${row.postTitle}`,
+    `다음 ${kind}을 삭제합니다. 되돌릴 수 없습니다.\n\n` +
+      `내용: ${preview}\n작성자: ${row.authorNickname}\n원글: ${row.postTitle}${extra}`,
   );
   if (!ok) return;
 
-  await run(row.id, `/api/admin/comments/${row.id}`, "댓글을 삭제했습니다.");
+  await run(row.id, `/api/admin/comments/${row.id}`, `${kind}을 삭제했습니다.`);
 }
 
 async function run(id: number, path: string, message: string) {
@@ -243,7 +249,10 @@ async function run(id: number, path: string, message: string) {
           </tr>
           <tr v-for="row in comments" :key="row.id">
             <td class="num">{{ row.id }}</td>
-            <td class="body-cell">{{ row.content }}</td>
+            <td class="body-cell">
+              <v-chip v-if="row.parentId" size="x-small" variant="tonal" class="mr-2">답글</v-chip>
+              {{ row.content }}
+            </td>
             <td>{{ row.authorNickname }}</td>
             <td class="work">{{ row.postTitle }}</td>
             <td class="date">{{ formatDate(row.createdAt) }}</td>

@@ -64,6 +64,14 @@ export type Comment = {
   authorId: number;
   mine: boolean;
   createdAt: string;
+  /**
+   * 이 댓글에 달린 답글.
+   *
+   * ★서버가 엮어서 준다★ parentId 만 받아 화면이 트리를 만들 수도 있지만,
+   * 그러면 같은 코드를 화면마다 다시 쓰게 된다. 깊이가 1단계로 고정이라
+   * 중첩이 깊어질 걱정도 없다. 답글의 replies 는 언제나 빈 배열이다.
+   */
+  replies: Comment[];
 };
 
 /* ── 글 ─────────────────────────────────────────────── */
@@ -109,10 +117,19 @@ export function fetchComments(postId: number): Promise<Comment[]> {
   return apiFetch<Comment[]>(`/api/posts/${postId}/comments`);
 }
 
-export function createComment(postId: number, content: string): Promise<void> {
+/**
+ * 댓글 작성. parentId 를 주면 그 댓글에 대한 답글이 된다.
+ *
+ * 답글에 답글은 달 수 없다(깊이 1단계) — 서버가 409 로 거부한다.
+ */
+export function createComment(
+  postId: number,
+  content: string,
+  parentId?: number,
+): Promise<void> {
   return apiFetch<void>(`/api/posts/${postId}/comments`, {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, parentId: parentId ?? null }),
   });
 }
 

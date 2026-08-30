@@ -15,5 +15,12 @@ public record AdminCommentResponse(
         Long authorId,
         Long postId,
         String postTitle,
+        /**
+         * 답글이면 부모 댓글 id, 최상위면 {@code null}.
+         *
+         * <p>운영자가 "이걸 지우면 뭐가 같이 사라지나"를 판단하려면 필요하다 —
+         * 최상위 댓글을 지우면 딸린 답글도 함께 사라진다.
+         */
+        Long parentId,
         LocalDateTime createdAt
 ) {}

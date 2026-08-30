@@ -31,6 +31,9 @@ function PostDetailPage() {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
+  // 답글은 한 번에 하나만 연다 — 여러 입력창이 동시에 열리면 어디에 쓰는지 헷갈린다
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -107,13 +110,38 @@ function PostDetailPage() {
     setBusy(true);
     try {
       await deleteComment(commentId);
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      // ★목록에서 걸러내지 않고 다시 읽는다★
+      //   댓글이 중첩 구조라 filter 로는 답글을 못 지운다.
+      //   게다가 부모를 지우면 답글도 함께 사라지므로 서버 기준이 정확하다.
+      setComments(await fetchComments(postId));
     } catch (e) {
       setError(e instanceof Error ? e.message : "댓글을 지우지 못했습니다.");
     } finally {
       setBusy(false);
     }
   };
+
+  const submitReply = async (parentId: number) => {
+    if (!replyText.trim()) return;
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+    setBusy(true);
+    try {
+      await createComment(postId, replyText.trim(), parentId);
+      setReplyText("");
+      setReplyingTo(null);
+      setComments(await fetchComments(postId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "답글을 남기지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** 답글까지 센 전체 댓글 수 — 헤더에 쓴다 */
+  const totalComments = comments.reduce((n, c) => n + 1 + c.replies.length, 0);
 
   const removePost = async () => {
     // 되돌릴 수 없는 동작이라 한 번 묻는다 (댓글도 함께 사라진다)
@@ -206,7 +234,7 @@ function PostDetailPage() {
 
             {/* ── 댓글 ── */}
             <Typography sx={{ fontWeight: 800, color: "#1b2a4a", mt: 4, mb: 1.5 }}>
-              댓글 <Box component="span" sx={{ color: "#0891b2" }}>{comments.length}</Box>
+              댓글 <Box component="span" sx={{ color: "#0891b2" }}>{totalComments}</Box>
             </Typography>
 
             <Card elevation={0} sx={{ borderRadius: 3, border: "1px solid #e5eaf2", bgcolor: "#fff" }}>
@@ -218,6 +246,8 @@ function PostDetailPage() {
                 comments.map((c, i) => (
                   <Box key={c.id}>
                     {i > 0 && <Divider />}
+
+                    {/* 최상위 댓글 */}
                     <Box sx={{ p: 2 }}>
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: "#0891b2" }}>
@@ -226,13 +256,24 @@ function PostDetailPage() {
                         <Typography variant="caption" color="text.secondary">
                           {formatPostDate(c.createdAt)}
                         </Typography>
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            // 이미 열려 있으면 닫는다 (토글)
+                            setReplyingTo(replyingTo === c.id ? null : c.id);
+                            setReplyText("");
+                          }}
+                          disabled={busy}
+                          sx={{ ml: "auto", minWidth: 0, px: 1, fontSize: 12, color: "text.secondary" }}
+                        >
+                          {replyingTo === c.id ? "취소" : "답글"}
+                        </Button>
                         {c.mine && (
                           <IconButton
                             size="small"
                             onClick={() => removeComment(c.id)}
                             disabled={busy}
                             aria-label="댓글 삭제"
-                            sx={{ ml: "auto" }}
                           >
                             <DeleteOutlineIcon sx={{ fontSize: 16 }} />
                           </IconButton>
@@ -240,6 +281,71 @@ function PostDetailPage() {
                       </Stack>
                       <Typography sx={{ mt: 0.5, whiteSpace: "pre-wrap" }}>{c.content}</Typography>
                     </Box>
+
+                    {/* 답글 — 왼쪽 선과 들여쓰기로 소속을 드러낸다 */}
+                    {c.replies.map((r) => (
+                      <Box
+                        key={r.id}
+                        sx={{
+                          pl: 4, pr: 2, py: 1.5,
+                          ml: 2, mb: 0.5,
+                          borderLeft: "2px solid #e5eaf2",
+                          bgcolor: "#fafbfd",
+                        }}
+                      >
+                        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: "#0891b2" }}>
+                            {r.authorNickname}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatPostDate(r.createdAt)}
+                          </Typography>
+                          {r.mine && (
+                            <IconButton
+                              size="small"
+                              onClick={() => removeComment(r.id)}
+                              disabled={busy}
+                              aria-label="답글 삭제"
+                              sx={{ ml: "auto" }}
+                            >
+                              <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          )}
+                        </Stack>
+                        <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: "pre-wrap" }}>
+                          {r.content}
+                        </Typography>
+                      </Box>
+                    ))}
+
+                    {/* 답글 입력 — 답글 버튼을 누른 댓글 아래에만 열린다 */}
+                    {replyingTo === c.id && (
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ pl: 4, pr: 2, pb: 2, ml: 2, alignItems: "flex-start" }}
+                      >
+                        <TextField
+                          fullWidth
+                          size="small"
+                          multiline
+                          maxRows={4}
+                          autoFocus
+                          placeholder={`${c.authorNickname} 님에게 답글`}
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          disabled={busy}
+                        />
+                        <Button
+                          variant="contained"
+                          onClick={() => submitReply(c.id)}
+                          disabled={busy || !replyText.trim()}
+                          sx={{ bgcolor: "#38bdf8", "&:hover": { bgcolor: "#0ea5e9" }, whiteSpace: "nowrap" }}
+                        >
+                          등록
+                        </Button>
+                      </Stack>
+                    )}
                   </Box>
                 ))
               )}

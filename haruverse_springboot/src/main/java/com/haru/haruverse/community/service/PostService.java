@@ -184,6 +184,9 @@ public class PostService {
      * <p>이 순서 지식은 <b>여기에만</b> 있다. 본인 삭제와 관리자 삭제가 함께 쓴다.
      */
     private void purge(Post post) {
+        // ★답글 → 최상위 댓글 순서★ comment 는 자기 테이블을 가리키는 FK(parent_id)를
+        //   갖는다. 한 번에 지우면 답글이 부모를 붙들고 있어 FK 위반이 난다.
+        commentRepository.deleteRepliesByPostId(post.getId());
         commentRepository.deleteByPostId(post.getId());
         postLikeRepository.deleteByPostId(post.getId());
         postRepository.delete(post);
@@ -191,27 +194,76 @@ public class PostService {
 
     /* ── 댓글 ─────────────────────────────────────────── */
 
+    /**
+     * 글의 댓글 — 답글이 부모 아래 중첩되어 나간다.
+     *
+     * <p><b>★쿼리는 한 번이다★</b> 최상위 댓글을 읽고 각각의 답글을 다시 부르면 N+1 이다.
+     * 부모·자식을 구분하지 않고 전부 가져온 뒤 여기서 엮는다.
+     *
+     * <p>정렬은 최상위끼리 오래된 순, 답글도 부모 아래에서 오래된 순이다.
+     * 쿼리가 이미 createdAt 오름차순으로 주므로 순회 순서를 그대로 쓰면 된다.
+     */
     @Transactional(readOnly = true)
     public List<CommentResponse> getComments(Long postId, String email) {
         Member me = findMemberOrNull(email);
-        return commentRepository.findByPostIdWithMember(postId).stream()
-                .map(c -> CommentResponse.of(c, c.isWrittenBy(me)))
+        List<Comment> all = commentRepository.findByPostIdWithMember(postId);
+
+        // 부모 id → 답글 목록
+        Map<Long, List<CommentResponse>> repliesByParent = new LinkedHashMap<>();
+        for (Comment c : all) {
+            if (!c.isReply()) continue;
+            repliesByParent
+                    .computeIfAbsent(c.getParent().getId(), k -> new ArrayList<>())
+                    .add(CommentResponse.of(c, c.isWrittenBy(me)));
+        }
+
+        return all.stream()
+                .filter(c -> !c.isReply())
+                .map(c -> CommentResponse.of(c, c.isWrittenBy(me),
+                        repliesByParent.getOrDefault(c.getId(), List.of())))
                 .toList();
     }
 
+    /**
+     * 댓글 또는 답글 작성.
+     *
+     * <p>{@code parentId} 가 있으면 그 댓글에 대한 답글이 된다.
+     *
+     * <p><b>★깊이는 1단계까지★</b> 답글에 다시 답글을 달려 하면 거부한다.
+     * 무한 깊이를 허용하면 화면이 오른쪽으로 계속 밀리고 조회가 재귀가 된다.
+     * 화면에서 답글의 답글 버튼을 숨기는 것만으로는 부족하다 — API 는 직접 부를 수 있다.
+     */
     @Transactional
     public Long createComment(Long postId, String email, CommentRequest request) {
         if (request == null || request.content() == null || request.content().isBlank()) {
             throw new IllegalStateException("댓글 내용을 입력해주세요.");
         }
-        Comment comment = new Comment(findPost(postId), findMember(email), request.content().trim());
+
+        Post post = findPost(postId);
+        Comment parent = null;
+
+        if (request.parentId() != null) {
+            parent = commentRepository.findById(request.parentId())
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "답글을 달 댓글을 찾을 수 없습니다. id=" + request.parentId()));
+
+            if (parent.isReply()) {
+                throw new IllegalStateException("답글에는 다시 답글을 달 수 없습니다.");
+            }
+            // 다른 글의 댓글 id 를 넣어 남의 글에 답글을 심는 걸 막는다
+            if (!parent.getPost().getId().equals(post.getId())) {
+                throw new IllegalStateException("이 글의 댓글이 아닙니다.");
+            }
+        }
+
+        Comment comment = new Comment(post, findMember(email), request.content().trim(), parent);
         return commentRepository.save(comment).getId();
     }
 
     /** 관리자 댓글 삭제 — 작성자 검증 없이 지운다 (경로가 ADMIN 으로 잠겨 있다) */
     @Transactional
     public void deleteCommentAsAdmin(Long commentId) {
-        commentRepository.delete(commentRepository.findById(commentId)
+        purgeComment(commentRepository.findById(commentId)
                 .orElseThrow(() -> new NoSuchElementException("댓글을 찾을 수 없습니다. id=" + commentId)));
     }
 
@@ -223,6 +275,17 @@ public class PostService {
         if (!comment.isWrittenBy(findMember(email))) {
             throw new ForbiddenException("본인이 쓴 댓글만 삭제할 수 있습니다.");
         }
+        purgeComment(comment);
+    }
+
+    /**
+     * 댓글과 거기 달린 답글을 지운다.
+     *
+     * <p>답글을 남겨두면 부모 없는 고아가 되고, FK 때문에 부모 삭제 자체가 막힌다.
+     * 답글을 지울 때는 아래가 빈 호출이 된다(답글에는 자식이 없다).
+     */
+    private void purgeComment(Comment comment) {
+        commentRepository.deleteByParentId(comment.getId());
         commentRepository.delete(comment);
     }
 
