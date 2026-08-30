@@ -103,10 +103,16 @@ public class PostService {
         });
     }
 
-    /** 전체 게시판의 최근 글 — 커뮤니티 첫 화면 */
+    /**
+     * 전체 게시판의 최근 글 — 커뮤니티 첫 화면. 검색어가 있으면 제목·본문·작성자·작품명에서 찾는다.
+     *
+     * @param keyword null 이거나 공백이면 전체 목록
+     */
     @Transactional(readOnly = true)
-    public PageResponse<RecentPostResponse> getRecentPosts(Pageable pageable) {
-        return PageResponse.of(postRepository.findRecentSummaries(pageable), r -> r);
+    public PageResponse<RecentPostResponse> getRecentPosts(String keyword, Pageable pageable) {
+        // 빈 문자열과 null 을 하나로 맞춘다 — 쿼리에서 둘 다 검사하지 않도록
+        String q = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        return PageResponse.of(postRepository.findRecentSummaries(q, pageable), r -> r);
     }
 
     /**

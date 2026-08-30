@@ -48,10 +48,18 @@ public class PostController {
      * <p>커뮤니티 첫 화면. 게시판(작품)이 187개라 목록만 두면 빈 게시판이 대부분이라,
      * 어느 게시판이든 새 글을 한곳에 모아 보여준다.
      */
+    /**
+     * 최근 글 — {@code q} 를 주면 게시글 검색이 된다.
+     *
+     * <p>별도 경로(/api/posts/search)를 만들지 않은 이유: 목록과 검색이
+     * 같은 모양의 결과를 주고 화면도 같다. 경로를 나누면 프론트가 두 함수를
+     * 갖게 되고 페이징 처리도 두 벌이 된다.
+     */
     @GetMapping("/api/posts")
     public ResponseEntity<PageResponse<RecentPostResponse>> getRecentPosts(
+            @RequestParam(required = false) String q,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(postService.getRecentPosts(pageable));
+        return ResponseEntity.ok(postService.getRecentPosts(q, pageable));
     }
 
     /** 작품 게시판 목록 — GET /api/works/{workId}/posts */

@@ -74,6 +74,38 @@ export type Comment = {
   replies: Comment[];
 };
 
+/**
+ * 전체 게시판의 글 한 건 — 커뮤니티 검색 결과에 쓴다.
+ *
+ * 백엔드 RecentPostResponse. 어느 게시판 글인지 함께 온다.
+ */
+export type RecentPost = {
+  id: number;
+  workId: number;
+  workTitle: string;
+  title: string;
+  authorNickname: string;
+  viewCount: number;
+  commentCount: number;
+  likeCount: number;
+  createdAt: string;
+};
+
+/**
+ * 게시글 검색 — 제목·본문·작성자·작품명에서 찾는다.
+ *
+ * 검색 전용 경로를 따로 두지 않았다. /api/posts 는 원래 최근 글 목록이고,
+ * q 를 붙이면 그 목록이 걸러질 뿐이라 결과 모양이 같다.
+ */
+export function searchPosts(
+  keyword: string,
+  page = 0,
+  size = 20,
+): Promise<PageResponse<RecentPost>> {
+  const q = keyword.trim() ? `&q=${encodeURIComponent(keyword.trim())}` : "";
+  return apiFetch<PageResponse<RecentPost>>(`/api/posts?page=${page}&size=${size}${q}`);
+}
+
 /* ── 글 ─────────────────────────────────────────────── */
 
 /** 작품 게시판 목록 (최신순) */

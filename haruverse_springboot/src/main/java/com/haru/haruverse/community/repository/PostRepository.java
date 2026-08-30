@@ -59,10 +59,23 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Post> findByIdWithMemberAndWork(@Param("id") Long id);
 
     /**
-     * 전체 게시판의 최근 글 — 커뮤니티 첫 화면용.
+     * 전체 게시판의 최근 글 — 커뮤니티 첫 화면용. <b>검색어가 있으면 걸러낸다.</b>
      *
      * <p>작품별 목록과 같은 집계 구조지만 <b>work 조건이 없고</b> 작품 정보가 함께 나간다.
      * left join·distinct·countQuery 가 필요한 이유는 위와 같다.
+     *
+     * <p><b>★검색에 Elasticsearch 를 쓰지 않는다★</b>
+     * 작품 검색은 ES 다. 187편 중에서 오타를 교정하고 한국어 제목까지 찾아야 했기 때문이다.
+     * 게시글은 사정이 다르다 — 사용자가 찾는 건 <b>방금 본 그 글</b>이고, 제목·본문에
+     * 실제로 들어 있는 말로 찾는다. 오타 교정이나 형태소 분석이 값을 하지 않는다.
+     *
+     * <p>인덱스를 하나 더 두면 동기화·정합성·재색인 비용이 계속 든다.
+     * (작품 색인이 DB 와 어긋난 적이 있어 대시보드에 드리프트 감지까지 붙였다)
+     * 글이 수만 건이 되어 LIKE 가 느려지면 그때 옮기면 된다 —
+     * WorkDocument 로 만든 패턴(색인 서비스·커밋 후 동기화·폴백)이 이미 있어
+     * 옮기는 비용은 낮다. <b>지금 필요하지 않은 인프라를 미리 들이지 않는다.</b>
+     *
+     * @param keyword 비어 있으면 전체 목록
      */
     @Query(value = """
             select new com.haru.haruverse.community.dto.RecentPostResponse(
@@ -73,11 +86,25 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             join p.work w
             left join Comment c on c.post = p
             left join PostLike l on l.post = p
+            where (:keyword is null
+                   or lower(p.title) like lower(concat('%', :keyword, '%'))
+                   or lower(p.content) like lower(concat('%', :keyword, '%'))
+                   or lower(m.nickname) like lower(concat('%', :keyword, '%'))
+                   or lower(w.title) like lower(concat('%', :keyword, '%')))
             group by p.id, w.id, w.title, p.title, m.nickname, p.viewCount, p.createdAt
             order by p.createdAt desc
             """,
-            countQuery = "select count(p) from Post p")
-    Page<RecentPostResponse> findRecentSummaries(Pageable pageable);
+            countQuery = """
+            select count(p) from Post p
+            join p.member m
+            join p.work w
+            where (:keyword is null
+                   or lower(p.title) like lower(concat('%', :keyword, '%'))
+                   or lower(p.content) like lower(concat('%', :keyword, '%'))
+                   or lower(m.nickname) like lower(concat('%', :keyword, '%'))
+                   or lower(w.title) like lower(concat('%', :keyword, '%')))
+            """)
+    Page<RecentPostResponse> findRecentSummaries(@Param("keyword") String keyword, Pageable pageable);
 
     /**
      * 채널(작품)별 글 수와 <b>최신 글 id</b> — 커뮤니티 첫 화면 1단계.
