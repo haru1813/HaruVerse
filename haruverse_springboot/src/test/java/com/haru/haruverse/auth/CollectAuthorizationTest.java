@@ -64,9 +64,17 @@ class CollectAuthorizationTest {
     void adminPasses() throws Exception {
         String token = tokenProvider.createToken("admin@haru.test", MemberRole.ADMIN);
 
-        // 실제 수집은 외부 API 상태에 따라 200일 수도 502일 수도 있다.
-        // 여기서 보는 건 "인가에서 막히지 않는다"뿐이다.
-        int statusCode = mockMvc.perform(post("/api/collect/jikan/top")
+        // ★수집이 실제로 일어나는 경로를 쓰면 안 된다★
+        //   예전에는 /api/collect/jikan/top 을 불렀는데, 그게 진짜로 Jikan 을 호출하고
+        //   가져온 작품을 커밋했다(이 클래스에는 @Transactional 이 없다).
+        //   Jikan 인기 1위가 Frieren 이라 jikan-52991 이 테스트 DB 에 남았고,
+        //   뒤에 도는 JikanWorkWriterTest 의 "최초 수집 → 생성(true)" 이 false 로 뒤집혔다.
+        //   테스트 순서에 따라 통과하기도 해서 더 고약했다.
+        //
+        //   여기서 보려는 건 "인가에서 막히지 않는다" 하나뿐이다.
+        //   필수 파라미터(ids)를 빼면 인가를 통과한 뒤 400 에서 멈춘다 —
+        //   네트워크도 안 타고 DB 도 건드리지 않는다.
+        int statusCode = mockMvc.perform(post("/api/collect/jikan/ids")
                         .header("Authorization", "Bearer " + token))
                 .andReturn().getResponse().getStatus();
 

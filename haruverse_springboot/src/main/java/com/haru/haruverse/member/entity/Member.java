@@ -50,7 +50,20 @@ public class Member {
         this.createdAt = LocalDateTime.now();
     }
 
-    // TODO(하루): 필요 시 role(권한)·프로필 이미지 등 필드 추가
+    /**
+     * 권한을 바꾼다 — 관리자 콘솔의 회원 관리에서만 부른다.
+     *
+     * <p><b>★여기에는 아무 검사도 없다★</b>
+     * "자기 자신은 못 바꾼다", "마지막 관리자는 못 내린다" 같은 규칙은
+     * {@code AdminMemberService} 에 있다. 엔티티는 <b>누가 부르는지</b>를 모르기 때문이다
+     * (로그인한 사람이 누군지, 관리자가 몇 명인지 알 수 없다).
+     * 그래서 이 메서드는 절대 컨트롤러에서 바로 부르지 않는다.
+     */
+    public void changeRole(MemberRole role) {
+        this.role = role;
+    }
+
+    // TODO(하루): 필요 시 프로필 이미지 등 필드 추가
 
     public Long getId() { return id; }
     public String getEmail() { return email; }

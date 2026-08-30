@@ -18,7 +18,7 @@ const identity = computed(() => readIdentity());
 const menu = [
   { title: "대시보드", icon: "mdi-view-dashboard-outline", to: "/", ready: true },
   { title: "수집 · 색인", icon: "mdi-cloud-download-outline", to: "/collect", ready: true },
-  { title: "회원", icon: "mdi-account-multiple-outline", to: "/members", ready: false },
+  { title: "회원", icon: "mdi-account-multiple-outline", to: "/members", ready: true },
   { title: "커뮤니티", icon: "mdi-forum-outline", to: "/community", ready: false },
 ];
 
