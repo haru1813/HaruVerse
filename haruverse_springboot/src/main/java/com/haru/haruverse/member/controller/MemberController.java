@@ -5,7 +5,11 @@ import com.haru.haruverse.member.entity.Member;
 import com.haru.haruverse.member.service.MemberService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import com.haru.haruverse.member.dto.PasswordChangeRequest;
+import com.haru.haruverse.member.service.PasswordService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,8 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
 
     private final MemberService memberService;
+    private final PasswordService passwordService;
 
-    public MemberController(MemberService memberService) {
+    public MemberController(MemberService memberService, PasswordService passwordService) {
+        this.passwordService = passwordService;
         this.memberService = memberService;
     }
 
@@ -28,5 +34,18 @@ public class MemberController {
         Member member = memberService.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
         return ResponseEntity.ok(new MemberResponse(member.getId(), member.getEmail(), member.getNickname()));
+    }
+
+    /**
+     * 비밀번호 변경 — 로그인한 본인만.
+     *
+     * <p>★대상은 토큰의 subject 다★ 요청 본문으로 이메일을 받지 않는다.
+     * 받으면 남의 이메일을 적어 다른 계정의 비밀번호를 바꾸려는 시도가 가능해진다.
+     */
+    @PatchMapping("/me/password")
+    public ResponseEntity<Void> changePassword(Authentication authentication,
+                                               @RequestBody PasswordChangeRequest request) {
+        passwordService.change(authentication.getName(), request);
+        return ResponseEntity.noContent().build();
     }
 }

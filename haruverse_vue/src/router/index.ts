@@ -47,6 +47,12 @@ const router = createRouter({
           component: () => import("../views/CommunityView.vue"),
           meta: { title: "커뮤니티" },
         },
+        {
+          path: "account",
+          name: "account",
+          component: () => import("../views/AccountView.vue"),
+          meta: { title: "내 계정" },
+        },
       ],
     },
     // 오타나 삭제된 주소로 들어오면 대시보드로. 관리 도구에 404 화면까지는 과하다.

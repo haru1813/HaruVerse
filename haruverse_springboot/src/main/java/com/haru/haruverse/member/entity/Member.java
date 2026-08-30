@@ -63,6 +63,18 @@ public class Member {
         this.role = role;
     }
 
+    /**
+     * 비밀번호를 바꾼다.
+     *
+     * <p><b>★반드시 인코딩된 값만 넘긴다★</b>
+     * 이 메서드는 받은 문자열을 그대로 저장한다 — 평문이 들어오면 평문이 저장된다.
+     * 인코딩은 {@code PasswordEncoder} 를 가진 서비스가 하고,
+     * 현재 비밀번호 확인도 거기서 한다(엔티티는 인코더를 모른다).
+     */
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
     // TODO(하루): 필요 시 프로필 이미지 등 필드 추가
 
     public Long getId() { return id; }
