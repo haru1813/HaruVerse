@@ -53,4 +53,17 @@ public interface WorkRepository extends JpaRepository<Work, Long>, JpaSpecificat
      * Pageable로 개수를 제한해 한 번에 다 긁지 않게 한다.
      */
     Page<Work> findBySource(WorkSource source, Pageable pageable);
+
+    // ── 관리자 통계용 집계 ──
+
+    /** 종류별 작품 수 (애니 / 게임) */
+    long countByType(WorkType type);
+
+    /**
+     * 한국어 제목이 채워진 작품 수.
+     *
+     * <p>채움률의 분자다. 분모는 {@link #countByType(WorkType)} 로 구한다 —
+     * TMDB 에는 게임이 없으므로 애니만 대상으로 본다.
+     */
+    long countByTypeAndTitleKoIsNotNull(WorkType type);
 }

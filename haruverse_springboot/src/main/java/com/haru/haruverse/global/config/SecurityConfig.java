@@ -66,6 +66,11 @@ public class SecurityConfig {
                     // 작업이라 반복 호출 자체가 부하다.
                     // ★POST 만 잠근다★ — 검색(GET /api/search/...)은 공개여야 한다.
                     .requestMatchers(HttpMethod.POST, "/api/search/**").hasRole("ADMIN")
+                    // ★관리자 콘솔 전용 API★
+                    //   통계·회원 관리 등 운영자만 봐야 하는 것들이 여기 모인다.
+                    //   경로 하나로 묶어 두면 API를 추가할 때마다 권한 설정을 다시
+                    //   손대지 않아도 된다 — '잠그는 걸 잊는' 사고를 구조로 막는다.
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     // 그 외는 토큰 필요
                     .anyRequest().authenticated())
             // 인증 안 된 요청 → 401 (기본 403 대신 명확하게)

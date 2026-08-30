@@ -1,6 +1,7 @@
 package com.haru.haruverse.member.repository;
 
 import com.haru.haruverse.member.entity.Member;
+import com.haru.haruverse.member.entity.MemberRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -11,4 +12,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    /** 권한별 회원 수 — 관리자 통계용 */
+    long countByRole(MemberRole role);
 }

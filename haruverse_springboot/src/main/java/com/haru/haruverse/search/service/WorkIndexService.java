@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
+import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -111,6 +112,31 @@ public class WorkIndexService {
             return docs.size();
         } catch (Exception e) {
             log.warn("전량 재색인 실패: {}", e.toString());
+            return -1;
+        }
+    }
+
+    /**
+     * 색인에 들어 있는 문서 수.
+     *
+     * <p>관리자 대시보드가 이 값을 DB 작품 수와 나란히 놓고 <b>드리프트</b>를 판단한다.
+     * 예전에 색인 48건 / DB 65건으로 벌어진 적이 있는데 원인을 못 찾았다.
+     * 재발을 눈으로 잡으려고 두는 값이다.
+     *
+     * <p>★색인이 아직 없으면 0 이 아니라 -1 이다★
+     * {@code ensureIndex()} 로 만들지 않는다 — 통계를 읽는 것뿐인데
+     * 부수효과로 색인을 만들면 "왜 갑자기 생겼지"가 된다.
+     *
+     * @return 문서 수. ES에 못 붙었거나 색인이 없으면 -1
+     */
+    public long countIndexed() {
+        try {
+            IndexOperations indexOps = operations.indexOps(WorkDocument.class);
+            if (!indexOps.exists()) return -1;
+
+            return operations.count(Query.findAll(), WorkDocument.class);
+        } catch (Exception e) {
+            log.warn("색인 문서 수 조회 실패: {}", e.toString());
             return -1;
         }
     }
