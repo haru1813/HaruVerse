@@ -98,7 +98,7 @@ services:
     #   앞단이 기존 nginx-server 다. 여기서 0.0.0.0 으로 열면
     #   인증서 없는 http 로 5303 포트가 그대로 노출된다.
     build:
-      context: ./haruverse_admin
+      context: ./haruverse_vue
     container_name: haruverse-admin
     ports:
       - "127.0.0.1:5303:80"

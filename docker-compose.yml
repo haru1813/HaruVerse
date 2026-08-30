@@ -145,7 +145,7 @@ services:
     # 관리자 콘솔 (Vue 3) — 서비스 프론트와 별개의 앱이다.
     # 운영 도구가 서비스와 함께 죽거나 살면 안 되므로 컨테이너를 나눈다.
     build:
-      context: ./haruverse_admin
+      context: ./haruverse_vue
     container_name: haruverse-admin
     ports:
       - "307:80"
