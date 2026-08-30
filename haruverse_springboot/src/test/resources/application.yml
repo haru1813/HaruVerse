@@ -79,3 +79,13 @@ search:
 upload:
   image-dir: ./build/test-uploads/images
   max-images-per-post: 5
+
+# ★테스트에도 MyBatis 설정이 필요하다★
+#   src/test/resources/application.yml 은 main 쪽 파일을 '덮어쓴다'(병합이 아니다).
+#   그래서 main 에만 적어 두면 테스트에서 매퍼 XML 을 찾지 못해
+#   "Invalid bound statement (not found)" 가 난다.
+#   외부 API 키·업로드 경로를 여기 다시 적은 것과 같은 이유다.
+mybatis:
+  mapper-locations: classpath:mappers/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true

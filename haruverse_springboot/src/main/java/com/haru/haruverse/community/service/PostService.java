@@ -6,6 +6,7 @@ import com.haru.haruverse.community.entity.Post;
 import com.haru.haruverse.community.entity.PostLike;
 import com.haru.haruverse.community.repository.CommentRepository;
 import com.haru.haruverse.community.repository.PostLikeRepository;
+import com.haru.haruverse.community.mapper.ChannelMapper;
 import com.haru.haruverse.community.repository.PostRepository;
 import com.haru.haruverse.global.exception.ForbiddenException;
 import com.haru.haruverse.global.response.PageResponse;
@@ -14,6 +15,7 @@ import com.haru.haruverse.member.repository.MemberRepository;
 import com.haru.haruverse.work.entity.Work;
 import com.haru.haruverse.work.repository.WorkRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,19 +38,22 @@ public class PostService {
     private final MemberRepository memberRepository;
     private final WorkRepository workRepository;
     private final PostImageService postImageService;
+    private final ChannelMapper channelMapper;
 
     public PostService(PostRepository postRepository,
                        CommentRepository commentRepository,
                        PostLikeRepository postLikeRepository,
                        MemberRepository memberRepository,
                        WorkRepository workRepository,
-                       PostImageService postImageService) {
+                       PostImageService postImageService,
+                       ChannelMapper channelMapper) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.postLikeRepository = postLikeRepository;
         this.memberRepository = memberRepository;
         this.workRepository = workRepository;
         this.postImageService = postImageService;
+        this.channelMapper = channelMapper;
     }
 
     /* ── 글 ───────────────────────────────────────────── */
@@ -65,45 +70,26 @@ public class PostService {
      *
      * <p>글이 하나라도 있는 작품만, 각 채널의 <b>최근 글</b>과 함께 돌려준다.
      *
-     * <p><b>두 번 조회하는 이유</b>
-     * "그룹별 최신 한 건"은 JPQL 로 한 번에 못 가져온다(서브쿼리에 limit 을 못 쓴다).
-     * 네이티브 쿼리로 짜면 되지만 DB 에 묶인다.
-     * → ① 작품별 글 수·최신 글 id 를 집계하고 ② 그 id 들만 한 번 더 읽는다.
-     *   쿼리는 두 번이지만 카드 수와 무관하게 <b>항상 두 번</b>이다(N+1 아님).
+     * <p><b>★여기만 MyBatis 를 쓴다★</b>
+     * 필요한 건 "작품별 최신 글 한 건 + 글 수"인데 JPQL 로는 한 번에 못 가져온다
+     * (서브쿼리에 limit 을 못 쓴다). 예전에는 ① 글 수·최신 글 id 를 집계하고
+     * ② 그 id 들을 다시 읽는 두 단계로 우회했다 — 쿼리 두 번에, 두 결과를
+     * 코드에서 다시 엮어야 했다.
+     *
+     * <p>윈도우 함수를 쓰면 <b>쿼리 한 번</b>으로 끝나고 엮는 코드도 사라진다.
+     * 이 프로젝트의 원칙은 <b>쓰기는 JPA, 어려운 읽기는 MyBatis</b> 다.
      */
     @Transactional(readOnly = true)
     public PageResponse<ChannelResponse> getChannels(Pageable pageable) {
-        Page<Object[]> stats = postRepository.findChannelStats(pageable);
-        // 비었으면 여기서 끝낸다 — 아래 findByIdIn 에 빈 목록을 넘기면
-        // "in ()" 이 되어 DB 에 따라 문법 오류가 난다
-        if (stats.isEmpty()) {
-            return PageResponse.of(stats, row -> null);
-        }
+        long total = channelMapper.countChannels();
 
-        // [workId, postCount, latestPostId]
-        Map<Long, Long> countByWorkId = new HashMap<>();
-        List<Long> latestIds = new ArrayList<>();
-        for (Object[] row : stats.getContent()) {
-            Long workId = ((Number) row[0]).longValue();
-            countByWorkId.put(workId, ((Number) row[1]).longValue());
-            latestIds.add(((Number) row[2]).longValue());
-        }
+        List<ChannelResponse> channels = total == 0
+                ? List.of()
+                : channelMapper.findChannels(pageable.getPageSize(), (int) pageable.getOffset());
 
-        Map<Long, Post> latestByWorkId = new HashMap<>();
-        for (Post p : postRepository.findByIdInWithWorkAndMember(latestIds)) {
-            latestByWorkId.put(p.getWork().getId(), p);
-        }
-
-        return PageResponse.of(stats, row -> {
-            Long workId = ((Number) row[0]).longValue();
-            Post latest = latestByWorkId.get(workId);
-            Work work = latest.getWork(); // 최신 글이 없는 채널은 애초에 목록에 없다
-            return new ChannelResponse(
-                    work.getId(), work.getTitle(), work.getImageUrl(),
-                    countByWorkId.get(workId),
-                    latest.getId(), latest.getTitle(),
-                    latest.getMember().getNickname(), latest.getCreatedAt());
-        });
+        // PageResponse 는 Spring Data 의 Page 를 받는다. MyBatis 는 Page 를 만들지 않으므로
+        // 조회 결과와 전체 건수로 PageImpl 을 만들어 넘긴다.
+        return PageResponse.of(new PageImpl<>(channels, pageable, total), c -> c);
     }
 
     /**

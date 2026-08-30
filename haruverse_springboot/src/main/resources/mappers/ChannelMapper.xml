@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.haru.haruverse.community.mapper.ChannelMapper">
+
+    <!--
+      채널 목록 — 작품별 최신 글 한 건 + 글 수를 한 번에.
+
+      ★윈도우 함수 두 개를 같은 서브쿼리에서 쓴다★
+        ROW_NUMBER() : 작품별로 번호를 매겨 1번(=최신)만 남긴다
+        COUNT(*) OVER: 같은 작품의 글 수를 각 행에 붙인다
+      GROUP BY 로는 "최신 글의 제목·작성자"까지 함께 가져올 수 없어
+      예전에는 쿼리를 두 번 날렸다.
+
+      ★ORDER BY 가 id 인 이유★
+        같은 시각에 쓰인 글이 둘이면 created_at 으로는 순서가 흔들려
+        페이지 경계에서 카드가 중복되거나 빠진다. id 는 auto increment 라 안정적이다.
+
+      ★생성자 매핑이 아니라 컬럼 별칭을 쓴다★
+        ChannelResponse 가 record 라 생성자 인자 순서에 의존하는데,
+        필드가 하나 늘면 조용히 어긋난다. 별칭 + map-underscore-to-camel-case 로
+        이름으로 맞춘다(application.yml 에 설정돼 있다).
+    -->
+    <select id="findChannels" resultType="com.haru.haruverse.community.dto.ChannelResponse">
+        SELECT
+            w.id                AS workId,
+            w.title             AS workTitle,
+            w.image_url         AS workImageUrl,
+            r.post_count        AS postCount,
+            r.id                AS latestPostId,
+            r.title             AS latestPostTitle,
+            m.nickname          AS latestPostAuthor,
+            r.created_at        AS latestPostCreatedAt
+        FROM (
+            SELECT
+                p.id, p.work_id, p.member_id, p.title, p.created_at,
+                ROW_NUMBER() OVER (PARTITION BY p.work_id ORDER BY p.id DESC) AS rn,
+                COUNT(*)     OVER (PARTITION BY p.work_id)                    AS post_count
+            FROM post p
+        ) r
+        JOIN work   w ON w.id = r.work_id
+        JOIN member m ON m.id = r.member_id
+        WHERE r.rn = 1
+        ORDER BY r.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 글이 하나라도 있는 작품의 수 -->
+    <select id="countChannels" resultType="long">
+        SELECT COUNT(DISTINCT p.work_id) FROM post p
+    </select>
+
+</mapper>
