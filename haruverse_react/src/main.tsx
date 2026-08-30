@@ -12,7 +12,10 @@ const theme = createTheme({
   palette: {
     primary: { main: '#2563eb' },   // 블루
     secondary: { main: '#38bdf8' }, // 시안 (HaruVerse 포인트 — 로고 'Verse'와 동일)
-    background: { default: '#f6f8fc' },
+    // ★페이지 배경 = 흰색★ 카드가 bgcolor:'transparent' 라 이 값이 그대로 카드 안쪽 색이 된다.
+    // #f6f8fc(옅은 청회색)였을 때 카드 안쪽만 회색으로 떠 보였다.
+    // 카드·패널은 전부 border:1px solid #e5eaf2 를 갖고 있어 흰 배경에서도 형태가 남는다.
+    background: { default: '#ffffff' },
   },
   shape: { borderRadius: 12 },
   typography: {
