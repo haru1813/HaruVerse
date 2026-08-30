@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.haru.haruverse.admin.mapper.AdminStatsMapper">
+
+    <!--
+      대시보드 건수 — 스칼라 서브쿼리로 한 번에.
+
+      ★예전에는 count() 를 12번 불렀다★
+        화면 한 장에 DB 왕복 12번. 각각은 가벼워도 왕복 비용이 쌓인다.
+
+      ★join 이 아니라 스칼라 서브쿼리를 쓴다★
+        서로 관계없는 표들의 건수라 join 할 근거가 없다.
+        억지로 엮으면 카티전 곱이 되어 숫자가 부풀려진다.
+
+      ★anime_with_characters 는 애니만 센다★
+        캐릭터는 Jikan 에서만 오므로 게임은 애초에 수집 대상이 아니다.
+        전체 작품을 분모로 쓰면 실제보다 나쁘게 보인다(그 버그를 한 번 고쳤다).
+    -->
+    <select id="countAll" resultType="com.haru.haruverse.admin.dto.StatsCounts">
+        SELECT
+            (SELECT COUNT(*) FROM work)                                   AS works,
+            (SELECT COUNT(*) FROM work WHERE type = 'ANIME')              AS anime,
+            (SELECT COUNT(*) FROM work WHERE type = 'GAME')               AS games,
+            (SELECT COUNT(*) FROM work
+              WHERE type = 'ANIME' AND title_ko IS NOT NULL)              AS title_ko_filled,
+            (SELECT COUNT(*) FROM anime_character)                        AS characters,
+            (SELECT COUNT(DISTINCT wc.work_id)
+               FROM work_character wc
+               JOIN work w ON w.id = wc.work_id
+              WHERE w.type = 'ANIME')                                     AS anime_with_characters,
+            (SELECT COUNT(*) FROM voice_actor)                            AS voice_actors,
+            (SELECT COUNT(*) FROM studio)                                 AS studios,
+            (SELECT COUNT(*) FROM member)                                 AS members,
+            (SELECT COUNT(*) FROM member WHERE role = 'ADMIN')            AS admins,
+            (SELECT COUNT(*) FROM post)                                   AS posts,
+            (SELECT COUNT(*) FROM comment)                                AS comments
+    </select>
+
+</mapper>
