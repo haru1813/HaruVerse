@@ -107,7 +107,7 @@ class AdminCommunityTest {
         Long postId = post.getId();
         assertThat(commentRepository.countByPostId(postId)).isEqualTo(1);
 
-        adminCommunityService.deletePost(postId);
+        adminCommunityService.deletePost(postId, "test-admin@haru.test");
 
         assertThat(postRepository.findById(postId)).isEmpty();
         assertThat(commentRepository.countByPostId(postId)).isZero();
@@ -118,7 +118,7 @@ class AdminCommunityTest {
     void deletesCommentOnly() {
         Comment comment = commentRepository.findByPostIdWithMember(post.getId()).get(0);
 
-        adminCommunityService.deleteComment(comment.getId());
+        adminCommunityService.deleteComment(comment.getId(), "test-admin@haru.test");
 
         assertThat(commentRepository.findById(comment.getId())).isEmpty();
         assertThat(postRepository.findById(post.getId())).isPresent();

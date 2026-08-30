@@ -48,6 +48,12 @@ const router = createRouter({
           meta: { title: "커뮤니티" },
         },
         {
+          path: "audit",
+          name: "audit",
+          component: () => import("../views/AuditView.vue"),
+          meta: { title: "감사 로그" },
+        },
+        {
           path: "account",
           name: "account",
           component: () => import("../views/AccountView.vue"),

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -34,8 +35,9 @@ public class AdminCommunityController {
     }
 
     @DeleteMapping("/posts/{id}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long id) {
-        communityService.deletePost(id);
+    public ResponseEntity<Void> deletePost(@PathVariable Long id, Authentication authentication) {
+        // 누가 지웠는지 감사 로그에 남긴다 — 토큰의 subject 를 쓴다
+        communityService.deletePost(id, authentication.getName());
         // 204 — 본문 없음. 프론트의 api.ts 가 이 경우 json() 을 부르지 않는다
         return ResponseEntity.noContent().build();
     }
@@ -49,8 +51,8 @@ public class AdminCommunityController {
     }
 
     @DeleteMapping("/comments/{id}")
-    public ResponseEntity<Void> deleteComment(@PathVariable Long id) {
-        communityService.deleteComment(id);
+    public ResponseEntity<Void> deleteComment(@PathVariable Long id, Authentication authentication) {
+        communityService.deleteComment(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }

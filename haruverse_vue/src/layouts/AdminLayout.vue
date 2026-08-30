@@ -20,6 +20,7 @@ const menu = [
   { title: "수집 · 색인", icon: "mdi-cloud-download-outline", to: "/collect", ready: true },
   { title: "회원", icon: "mdi-account-multiple-outline", to: "/members", ready: true },
   { title: "커뮤니티", icon: "mdi-forum-outline", to: "/community", ready: true },
+  { title: "감사 로그", icon: "mdi-history", to: "/audit", ready: true },
   { title: "내 계정", icon: "mdi-account-cog-outline", to: "/account", ready: true },
 ];
 

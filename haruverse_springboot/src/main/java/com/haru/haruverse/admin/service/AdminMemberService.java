@@ -1,6 +1,7 @@
 package com.haru.haruverse.admin.service;
 
 import com.haru.haruverse.admin.dto.AdminMemberResponse;
+import com.haru.haruverse.admin.entity.AuditAction;
 import com.haru.haruverse.member.entity.Member;
 import com.haru.haruverse.member.entity.MemberRole;
 import com.haru.haruverse.member.repository.MemberRepository;
@@ -30,9 +31,11 @@ import java.util.NoSuchElementException;
 public class AdminMemberService {
 
     private final MemberRepository memberRepository;
+    private final AuditService auditService;
 
-    public AdminMemberService(MemberRepository memberRepository) {
+    public AdminMemberService(MemberRepository memberRepository, AuditService auditService) {
         this.memberRepository = memberRepository;
+        this.auditService = auditService;
     }
 
     /**
@@ -79,8 +82,14 @@ public class AdminMemberService {
                     "마지막 관리자는 강등할 수 없습니다. 다른 관리자를 먼저 지정하세요.");
         }
 
+        MemberRole before = target.getRole();
         target.changeRole(newRole);
         // 더티 체킹으로 커밋 시 UPDATE 가 나간다 (save 호출 불필요)
+
+        auditService.record(currentEmail, AuditAction.CHANGE_ROLE, targetId,
+                "%s(%s) %s → %s".formatted(
+                        target.getNickname(), target.getEmail(), before, newRole));
+
         return AdminMemberResponse.from(target);
     }
 }
