@@ -13,6 +13,7 @@
 #   5300  프론트 (nginx-server 가 여기로 프록시)
 #   5301  백엔드
 #   5302  Elasticsearch
+#   5303  관리자 콘솔 (nginx-server 가 admin-haruverse.haru.company 를 여기로 프록시)
 # ─────────────────────────────────────────────────────────────
 
 services:
@@ -83,6 +84,24 @@ services:
     ports:
       # 앞단이 nginx-server 이므로 로컬호스트에만 연다
       - "127.0.0.1:5300:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Seoul
+    restart: unless-stopped
+
+  admin:
+    # 관리자 콘솔 (Vue 3) — admin-haruverse.haru.company 로 서비스된다.
+    #
+    # ★프론트와 마찬가지로 로컬호스트에만 연다★
+    #   앞단이 기존 nginx-server 다. 여기서 0.0.0.0 으로 열면
+    #   인증서 없는 http 로 5303 포트가 그대로 노출된다.
+    build:
+      context: ./haruverse_admin
+    container_name: haruverse-admin
+    ports:
+      - "127.0.0.1:5303:80"
     depends_on:
       backend:
         condition: service_healthy

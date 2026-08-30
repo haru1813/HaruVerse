@@ -6,6 +6,7 @@
 #        백엔드   http://localhost:304/api/works
 #        MariaDB  localhost:305
 #        검색     http://localhost:306   (Elasticsearch)
+#        관리자   http://localhost:307   (Vue 관리자 콘솔)
 #
 # 로컬 개발(5173 / 8080)과 포트가 겹치지 않아 동시에 띄울 수 있고,
 # ★DB는 하나를 함께 쓴다★ — 로컬에서 쓴 글이 컨테이너에도 그대로 보인다.
@@ -135,6 +136,22 @@ services:
       backend:
         # 백엔드가 healthcheck 를 통과한 뒤에 뜬다.
         # service_started 로 두면 첫 요청이 502 로 떨어진다.
+        condition: service_healthy
+    environment:
+      TZ: Asia/Seoul
+    restart: unless-stopped
+
+  admin:
+    # 관리자 콘솔 (Vue 3) — 서비스 프론트와 별개의 앱이다.
+    # 운영 도구가 서비스와 함께 죽거나 살면 안 되므로 컨테이너를 나눈다.
+    build:
+      context: ./haruverse_admin
+    container_name: haruverse-admin
+    ports:
+      - "307:80"
+    depends_on:
+      backend:
+        # 프론트와 같은 이유 — service_started 로 두면 첫 요청이 502 로 떨어진다
         condition: service_healthy
     environment:
       TZ: Asia/Seoul

@@ -26,6 +26,19 @@ npm run dev      # http://localhost:5310
 ssh -f -N -L 8080:127.0.0.1:5301 macmini
 ```
 
+## 컨테이너로 띄우기
+
+```bash
+# 로컬 — http://localhost:307
+docker compose up -d --build admin
+
+# 맥미니(운영) — 127.0.0.1:5303, 앞단은 nginx-server
+docker compose -f docker-compose.macmini.yml up -d --build admin
+```
+
+컨테이너 안에서는 `nginx.conf`가 `/api/`를 `backend:8080`으로 넘긴다.
+개발 서버의 Vite 프록시와 같은 역할이고, 이유도 같다 — **same-origin 유지**.
+
 ## 구조
 
 ```
