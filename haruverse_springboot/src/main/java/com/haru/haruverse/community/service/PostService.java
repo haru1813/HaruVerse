@@ -150,20 +150,42 @@ public class PostService {
         post.edit(request.title().trim(), request.content().trim());
     }
 
-    /**
-     * 글 삭제.
-     *
-     * <p>★삭제 순서★ 댓글·추천이 글을 참조하므로 그것들을 <b>먼저</b> 지운다.
-     * 순서를 어기면 커밋 때 FK 위반으로 터진다.
-     * (cascade를 걸면 코드가 짧아지지만, 무엇이 함께 지워지는지 보이지 않는다)
-     */
+    /** 글 삭제 — 본인 글만. 실제로 지우는 일은 {@link #purge(Post)} 가 한다 */
     @Transactional
     public void deletePost(Long id, String email) {
         Post post = findPost(id);
         requireAuthor(post, email);
+        purge(post);
+    }
 
-        commentRepository.deleteByPostId(id);
-        postLikeRepository.deleteByPostId(id);
+    /**
+     * 관리자 삭제 — 작성자 검증을 하지 않는다.
+     *
+     * <p>★권한 검사는 SecurityConfig 가 한다★
+     * 이 메서드는 {@code /api/admin/**} 아래에서만 호출되고,
+     * 그 경로는 {@code hasRole("ADMIN")} 으로 잠겨 있다.
+     *
+     * <p>★삭제 순서를 여기서 다시 쓰지 않는 이유★
+     * {@link #purge(Post)} 를 함께 쓴다. 순서 지식이 두 군데로 갈라지면
+     * 나중에 연관 테이블이 늘었을 때 한쪽만 고쳐 FK 위반이 난다.
+     */
+    @Transactional
+    public void deletePostAsAdmin(Long id) {
+        purge(findPost(id));
+    }
+
+    /**
+     * 글과 딸린 것들을 지운다.
+     *
+     * <p><b>★삭제 순서★</b> 댓글·추천이 글을 참조하므로 그것들을 <b>먼저</b> 지운다.
+     * 순서를 어기면 커밋 때 FK 위반으로 터진다.
+     * (cascade를 걸면 코드가 짧아지지만, 무엇이 함께 지워지는지 보이지 않는다)
+     *
+     * <p>이 순서 지식은 <b>여기에만</b> 있다. 본인 삭제와 관리자 삭제가 함께 쓴다.
+     */
+    private void purge(Post post) {
+        commentRepository.deleteByPostId(post.getId());
+        postLikeRepository.deleteByPostId(post.getId());
         postRepository.delete(post);
     }
 
@@ -184,6 +206,13 @@ public class PostService {
         }
         Comment comment = new Comment(findPost(postId), findMember(email), request.content().trim());
         return commentRepository.save(comment).getId();
+    }
+
+    /** 관리자 댓글 삭제 — 작성자 검증 없이 지운다 (경로가 ADMIN 으로 잠겨 있다) */
+    @Transactional
+    public void deleteCommentAsAdmin(Long commentId) {
+        commentRepository.delete(commentRepository.findById(commentId)
+                .orElseThrow(() -> new NoSuchElementException("댓글을 찾을 수 없습니다. id=" + commentId)));
     }
 
     @Transactional

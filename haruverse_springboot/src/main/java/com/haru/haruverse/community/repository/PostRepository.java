@@ -1,5 +1,6 @@
 package com.haru.haruverse.community.repository;
 
+import com.haru.haruverse.admin.dto.AdminPostResponse;
 import com.haru.haruverse.community.dto.PostSummaryResponse;
 import com.haru.haruverse.community.dto.RecentPostResponse;
 import com.haru.haruverse.community.entity.Post;
@@ -130,4 +131,42 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             group by p.work.id
             """)
     List<Object[]> findChannelStatsByWorkIds(@Param("workIds") Collection<Long> workIds);
+
+    /**
+     * 관리자 게시글 목록 — 제목·본문·작성자 닉네임에서 검색한다.
+     *
+     * <p>★fetch join 이 아니라 DTO 프로젝션을 쓴다★
+     * 페이징과 fetch join 을 함께 쓰면 하이버네이트가 전체를 메모리로 읽어
+     * 그 안에서 자른다(HHH90003004 경고). 필요한 열만 골라 담으면
+     * 그 문제도 없고 본문 10,000자를 통째로 끌고 오지도 않는다.
+     *
+     * <p>본문은 앞 120자만 잘라 넘긴다 — 목록에서는 그 이상 필요 없다.
+     *
+     * @param keyword 비어 있으면 전체 (null 검사를 쿼리에서 한다)
+     */
+    @Query(value = """
+            select new com.haru.haruverse.admin.dto.AdminPostResponse(
+                       p.id, p.title, substring(p.content, 1, 120),
+                       m.nickname, m.id, w.title, w.id,
+                       p.viewCount, count(c.id), p.createdAt)
+            from Post p
+            join p.member m
+            join p.work w
+            left join Comment c on c.post = p
+            where (:keyword is null or :keyword = ''
+                   or lower(p.title) like lower(concat('%', :keyword, '%'))
+                   or lower(p.content) like lower(concat('%', :keyword, '%'))
+                   or lower(m.nickname) like lower(concat('%', :keyword, '%')))
+            group by p.id, p.title, p.content, m.nickname, m.id, w.title, w.id,
+                     p.viewCount, p.createdAt
+            order by p.createdAt desc
+            """,
+            countQuery = """
+            select count(p) from Post p join p.member m
+            where (:keyword is null or :keyword = ''
+                   or lower(p.title) like lower(concat('%', :keyword, '%'))
+                   or lower(p.content) like lower(concat('%', :keyword, '%'))
+                   or lower(m.nickname) like lower(concat('%', :keyword, '%')))
+            """)
+    Page<AdminPostResponse> findForAdmin(@Param("keyword") String keyword, Pageable pageable);
 }
