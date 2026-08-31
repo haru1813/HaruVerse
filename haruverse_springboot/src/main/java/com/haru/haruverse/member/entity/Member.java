@@ -1,12 +1,22 @@
 package com.haru.haruverse.member.entity;
 
+import com.haru.haruverse.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 
-// 회원 엔티티 — 'member' 테이블과 매핑.
+/**
+ * 회원 엔티티 — 'member' 테이블과 매핑.
+ *
+ * <p><b>★BaseTimeEntity 를 상속한다★</b>
+ * 처음에는 상속하지 않고 {@code createdAt} 만 직접 들고 있었다.
+ * 가입 시각만 있으면 됐고 회원 정보를 고칠 일이 없었기 때문이다
+ * (찜·구독·추천처럼 "수정"이라는 개념이 없는 것들과 같은 취급이었다).
+ *
+ * <p>그 전제가 깨졌다 — 비밀번호 변경과 권한 변경이 생겼다.
+ * 이제 회원은 수정되는 대상이므로 {@code updatedAt} 이 의미를 갖는다.
+ */
 @Entity
 @Table(name = "member")
-public class Member {
+public class Member extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,8 +44,10 @@ public class Member {
     @Column(nullable = false, length = 20, columnDefinition = "varchar(20) not null default 'USER'")
     private MemberRole role = MemberRole.USER;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    // ★createdAt·updatedAt 은 BaseTimeEntity 가 갖는다★
+    //   여기에 다시 선언하면 부모 필드를 가려(shadowing) 같은 컬럼에 두 필드가 얽히고,
+    //   @PrePersist 도 둘이 되어 어느 쪽이 도는지 알 수 없게 된다.
+    //   실제로 그 상태에서 updated_at 이 채워지지 않았다.
 
     protected Member() {} // JPA용 기본 생성자 (직접 호출 금지)
 
@@ -43,11 +55,6 @@ public class Member {
         this.email = email;
         this.password = password;
         this.nickname = nickname;
-    }
-
-    @PrePersist
-    void onCreate() {
-        this.createdAt = LocalDateTime.now();
     }
 
     /**
@@ -82,5 +89,5 @@ public class Member {
     public String getPassword() { return password; }
     public String getNickname() { return nickname; }
     public MemberRole getRole() { return role; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    // getCreatedAt() · getUpdatedAt() 은 BaseTimeEntity 가 제공한다
 }
